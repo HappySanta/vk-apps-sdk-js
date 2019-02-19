@@ -41,6 +41,7 @@ export default class VkStartParamsBuilder {
         ss(v, params, 'vk_access_token_settings', TYPE_STRING, '')
         ss(v, params, 'vk_group_id', TYPE_INTEGER, 0)
         ss(v, params, 'vk_viewer_group_role', TYPE_STRING, 'none')
+		ss(v, params, 'vk_platform', TYPE_STRING, '')
         ss(v, params, 'vk_sign', TYPE_STRING, '')
 
 		return v
