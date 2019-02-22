@@ -141,6 +141,25 @@ export default class VkStartParams {
 		this._viewerGroupRole = value;
 	}
 
+	/**
+	 * Платформа, из которой запущен сервис
+	 * mobile_android — официальное приложение для Android,
+	 * mobile_iphone — официальное приложение для iPhone,
+	 * mobile_web — браузерная мобильная версия,
+	 * desktop_web — браузерная полная версия.
+	 * @returns {string}
+	 */
+	get platform() {
+		return this._platform;
+	}
+
+	/**
+	 * @param {string} value
+	 */
+	set platform(value) {
+		this._platform = value;
+	}
+
     /**
      * vk_sign (string) — подпись переданных параметров
      * @returns {string}
@@ -180,6 +199,10 @@ export default class VkStartParams {
 		return (this.isInGroup() && this.viewerGroupRole === VkStartParams.VIEWER_GROUP_ROLE_NOBODY)
 	}
 
+	isMobile() {
+    	return this.platform !== 'desktop_web'
+	}
+
     /**
 	 * @return string
      */
@@ -198,5 +221,6 @@ export default class VkStartParams {
 	_accessTokenSettings
 	_groupId
 	_viewerGroupRole
+	_platform
 	_sign
 }
