@@ -119,7 +119,7 @@ VkSdk.openContacts()
 @returns {Promise}
 
 ```javascript
-VkSdk.getAuthToken()
+VkSdk.getAuthToken(scope)
 ```
 
 ### callAPIMethod
@@ -135,7 +135,7 @@ VkSdk.getAuthToken()
 @returns {Promise}
 
 ```javascript
-VkSdk.callAPIMethod(scope)
+VkSdk.callAPIMethod(method, params, requestId)
 ```
 
 ### share
@@ -150,7 +150,7 @@ VkSdk.share(link)
 
 ### showWallPostBox
 
-* Публикация записей на стене<br/>
+Публикация записей на стене<br/>
 @param {Object} params - См. описание метода [wall.post](https://vk.com/dev/wall.post)<br/>
 Позволяет пользователю опубликовать запись на стене<br/>
 @returns {Promise}
@@ -280,7 +280,7 @@ VkSdk.setViewSettings(statusBarStyle, actionBarColor)
 @returns {Promise}
 
 ```javascript
-VkSdk.scroll()
+VkSdk.scroll(top, speed)
 ```
 
 ### resizeWindow
