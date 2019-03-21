@@ -214,7 +214,7 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static openQR() {
-		return new VkConnectRequest('VKWebAppOpenQR', {}, undefined, 'VKWebAppOpenQRFailed').send()
+		return new VkConnectRequest('VKWebAppOpenQR', {}, 'VKWebAppOpenQRResult', 'VKWebAppOpenQRFailed').send()
 	}
 
 	/**
@@ -243,7 +243,7 @@ export default class VkSdk {
 		if (actionBarColor) {
 			params.action_bar_color = actionBarColor
 		}
-		return new VkConnectRequest('VKWebAppSetViewSettings', params, undefined, 'VKWebAppSetViewSettingsFailed').send()
+		return new VkConnectRequest('VKWebAppSetViewSettings', params, 'VKWebAppSetViewSettingsResult', 'VKWebAppSetViewSettingsFailed').send()
 	}
 
 	/**
