@@ -15,6 +15,9 @@ import VkSdk from "@happysanta/vk-apps-sdk"
 ## Методы
 
 * [.getStartParams()](#getstartparams)
+* [.subscribeEvent()](#subscribeevent)
+* [.unsubscribeEvent()](#unsubscribeevent)
+* [.getRequest()](#getrequest)
 * [.init()](#init)
 * [.getUserInfo()](#getuserinfo)
 * [.getPhoneNumber()](#getphonenumber)
@@ -55,6 +58,39 @@ VkSdk.getStartParams()
 
 ```javascript
 VkSdk.init()
+```
+
+### subscribeevent
+
+Подписаться на соббытие VkConnect
+@param {string} event - Тип события VkConnect
+@param {function} callback - колбек
+
+```javascript
+VkSdk.subscribeEvent(event, callback)
+```
+
+### unsubscribeevent
+
+Отписаться от соббытия VkConnect
+@param {string} event - Тип события VkConnect
+@param {function} callback - колбек
+
+```javascript
+VkSdk.unsubscribeEvent(event, callback)
+```
+
+### getrequest
+
+Возвращает объект для запроса в VkConnect
+@param command - Команда в VkConnect
+@param params - параметры запроса
+@param successEvent - колбек при успешном выполнении
+@param failEvent - колбек при неуспешном выполнении
+@returns {VkConnectRequest}
+
+```javascript
+VkSdk.getRequest(command, params, successEvent, failEvent)
 ```
 
 ### getUserInfo

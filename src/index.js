@@ -1,6 +1,7 @@
 import queryString from 'query-string'
 import VkStartParamsBuilder from "./VkStartParamsBuilder"
 import {VkConnectRequest} from "./VkConnectRequest"
+import VkConnectObserver from "./VkConnectObserver"
 
 export default class VkSdk {
 
@@ -18,6 +19,36 @@ export default class VkSdk {
 			VkSdk.startSearch = window.location.search
 		}
 		return VkSdk.startParams
+	}
+
+	/**
+	 * Подписаться на соббытие VkConnect
+	 * @param {string} event - Тип события VkConnect
+	 * @param {function} callback - колбек
+	 */
+	static subscribeEvent(event, callback) {
+		VkConnectObserver.subscribe(event, callback)
+	}
+
+	/**
+	 * Отписаться от соббытия VkConnect
+	 * @param {string} event - Тип события VkConnect
+	 * @param {function} callback - колбек
+	 */
+	static unsubscribeEvent(event, callback) {
+		VkConnectObserver.unsubscribe(event, callback)
+	}
+
+	/**
+	 * Возвращает объект для запроса в VkConnect
+	 * @param command - Команда в VkConnect
+	 * @param params - параметры запроса
+	 * @param successEvent - колбек при успешном выполнении
+	 * @param failEvent - колбек при неуспешном выполнении
+	 * @returns {VkConnectRequest}
+	 */
+	static getRequest(command, params = {}, successEvent = undefined, failEvent = undefined) {
+		return new VkConnectRequest(command, params, successEvent, failEvent)
 	}
 
 	/**

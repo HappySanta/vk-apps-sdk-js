@@ -1,6 +1,6 @@
 {
 	"name": "@happysanta/vk-apps-sdk",
-	"version": "1.0.7",
+	"version": "1.0.8",
 	"description": "JS SDK for Vk apps",
 	"main": "index.js",
 	"jsnext:main": "src/index.js",
