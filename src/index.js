@@ -2,6 +2,7 @@ import queryString from 'query-string'
 import VkStartParamsBuilder from "./VkStartParamsBuilder"
 import {VkConnectRequest} from "./VkConnectRequest"
 import VkConnectObserver from "./VkConnectObserver"
+import VKConnect from "@vkontakte/vkui-connect/index"
 
 export default class VkSdk {
 
@@ -310,5 +311,9 @@ export default class VkSdk {
 	static getPersonalCard(type) {
 		return new VkConnectRequest('VKWebAppGetPersonalCard', {type},
 			'VKWebAppGetPersonalCardResult', 'VKWebAppGetPersonalCardFailed').send()
+	}
+
+	static getVkConnect() {
+		return VKConnect
 	}
 }
