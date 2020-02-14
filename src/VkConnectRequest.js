@@ -1,4 +1,4 @@
-import VKConnect from "@vkontakte/vkui-connect/index"
+import VKConnect from "@vkontakte/vk-connect"
 
 export class VkConnectRequest {
 
@@ -49,7 +49,7 @@ export class VkConnectRequest {
 				VKConnect.subscribe(callback)
 			}
 
-			VKConnect.send(this.command, this.params)
+			VKConnect.send(this.command, this.params).catch(() => {})
 		})
 	}
 }

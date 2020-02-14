@@ -2,13 +2,13 @@ import queryString from 'query-string'
 import VkStartParamsBuilder from "./VkStartParamsBuilder"
 import {VkConnectRequest} from "./VkConnectRequest"
 import VkConnectObserver from "./VkConnectObserver"
-import VKConnect from "@vkontakte/vkui-connect/index"
+import VKConnect from "@vkontakte/vk-connect"
 
 export default class VkSdk {
 
 	static startParams = null
 	static startSearch = ""
-	static defaultApiVersion = '5.92'
+	static defaultApiVersion = '5.103'
 
 	/**
 	 * Возвращает объект с параметрами запуска приложения
