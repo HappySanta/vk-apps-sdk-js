@@ -1,13 +1,13 @@
 {
 	"name": "@happysanta/vk-apps-sdk",
-	"version": "2.0.1",
+	"version": "2.0.2",
 	"description": "Обёртка над vk-connect",
 	"main": "index.js",
 	"jsnext:main": "src/index.js",
 	"scripts": {
 		"compile": "babel src --out-dir lib --presets=@babel/env --plugins=@babel/proposal-class-properties",
 		"prepublish": "npm run compile",
-		"publish": "npm publish --access public"
+		"pub": "npm publish --access public"
 	},
 	"repository": {
 		"type": "git",
