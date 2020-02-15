@@ -4,11 +4,127 @@ import {VkConnectRequest} from "./VkConnectRequest"
 import VkConnectObserver from "./VkConnectObserver"
 import VKConnect from "@vkontakte/vk-connect"
 
+export class VkSdkError extends Error {
+
+	static UNKNOWN_TYPE = 'UNKNOWN_TYPE'
+	static CLIENT_ERROR = 'client_error'
+	static API_ERROR = 'api_error'
+	static NETWORK_ERROR = 'network_error'
+	static ACCESS_ERROR = 'access_error'
+
+	constructor(message) {
+		super(message)
+		this.message = message
+		this.type = VkSdkError.UNKNOWN_TYPE
+		this.code = 0
+	}
+}
+
+export class VkApiError extends VkSdkError {
+	constructor(message) {
+		super(message)
+		this.type = VkSdkError.API_ERROR
+	}
+}
+
+
+export function isVkApiError(object) {
+	return castToVkApi(object) !== null
+}
+
+export function castToVkApi(error) {
+	if (error instanceof Error) return error
+	const data = getVkApiErrorCodeAndMessage(error)
+	if (data) {
+		const [error_code, error_msg, error_text] = data
+		const err = new VkApiError(error_msg)
+		err.code = error_code
+		if (error_text) {
+			err.text = error_text
+		}
+		return err
+	}
+	return null
+}
+
+function normalize(str) {
+	return str.toString().split(',').map(x => x.trim().toLowerCase()).sort().join(",")
+}
+
+export function isEqualScope(left, right) {
+	return normalize(left) === normalize(right)
+}
+
+export function getVkApiErrorCodeAndMessage(object) {
+	if (!object) return null
+	const {error_data, error_type} = object
+	if (error_data === undefined && error_type === undefined) {
+		return null
+	}
+	const {error_code, error_reason, error_msg, error_text} = error_data
+	if (error_code === undefined && error_reason === undefined) {
+		return null
+	}
+	if (error_code !== undefined && error_msg) {
+		return [error_code, error_msg, error_text]
+	}
+	if (typeof error_reason === "object" && error_reason) {
+		const {error_code, error_msg, error_text} = error_reason
+		if (error_code !== undefined && error_msg) {
+			return [error_code, error_msg, error_text]
+		}
+	}
+	return null
+}
+
+export function castToError(object) {
+	if (object instanceof Error) {
+		return object
+	}
+	const error = new VkSdkError(JSON.stringify(object) || "SUPER UNKNOWN ERROR BY @happysanta/vk-apps-sdk library")
+	if (object && object.error_data && object.error_data.error_reason) {
+		error.message = `#${object.error_data.error_code} ${object.error_data.error_reason}`
+	}
+	if (object && object.error_data && object.error_data.error_code) {
+		error.code = object.error_data.error_code
+	}
+	if (object && object.error_type) {
+		error.type = object.error_type
+	}
+	if (error.code === 3 && error.type === 'client_error') {
+		error.type = VkSdkError.NETWORK_ERROR
+	}
+	if (error.code === 4 && error.type === 'client_error') {
+		error.type = VkSdkError.ACCESS_ERROR
+	}
+	return error
+}
+
+
+export const VK_API_AUTH_FAIL = 5
+export const VK_API_UNKNOWN_ERROR = 1
+export const VK_API_TOO_MANY_REQUEST = 6
+export const VK_API_TOO_MANY_SAME_ACTIONS = 9
+
+/*
+Считается что если вызов апи вернулся с этим кодом, то запрос можно повторить
+ */
+export const SOFT_ERROR_CODES = [
+	VK_API_UNKNOWN_ERROR, //Произошла неизвестная ошибка.
+	VK_API_TOO_MANY_REQUEST, //Слишком много запросов в секунду.
+	VK_API_TOO_MANY_SAME_ACTIONS, //Слишком много однотипных действий.
+]
+
+export function delay(time) {
+	return new Promise(resolve => setTimeout(resolve, time))
+}
+
 export default class VkSdk {
 
 	static startParams = null
 	static startSearch = ""
 	static defaultApiVersion = '5.103'
+	static tokenCache = {}
 
 	/**
 	 * Возвращает объект с параметрами запуска приложения
@@ -118,9 +234,16 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static getAuthToken(scope = '') {
-		return new VkConnectRequest('VKWebAppGetAuthToken', {
+		const params = {
 			app_id: this.getStartParams().appId, scope
-		}, 'VKWebAppAccessTokenReceived', 'VKWebAppAccessTokenFailed').send()
+		}
+		return (new VkConnectRequest('VKWebAppGetAuthToken', params, 'VKWebAppAccessTokenReceived', 'VKWebAppAccessTokenFailed'))
+			.send()
+			.catch(e => {
+				e = castToError(e)
+				e.message = "VKWebAppGetAuthToken error " + JSON.stringify(params) + ": " + e.message
+				throw e
+			})
 	}
 
 	/**
@@ -141,6 +264,66 @@ export default class VkSdk {
 		return new VkConnectRequest('VKWebAppCallAPIMethod', {
 			method, params
 		}, 'VKWebAppCallAPIMethodResult', 'VKWebAppCallAPIMethodFailed').send(requestId)
+	}
+
+	/**
+	 * Вызов методов API с запросов токена если нужно
+	 * Позволяет получить результат вызова метода API ВКонтакте.
+	 * @param {string} method - название метода API. {@url https://vk.com/dev/methods}
+	 * @param {Object} params - параметры метода в виде JSON
+	 * @param {string} scope - права необходимые для этого запроса, через запятую
+	 * @param {Number} retry - допустимое количество повторов которое можно сделать если с первого раза не получится
+	 * @throws VkSdkError
+	 * @returns {Promise<Object>}
+	 */
+	static api(method, params = {}, scope = "", retry = 5) {
+		if (!VkSdk.tokenCache[scope] && !params.access_token) {
+			return VkSdk.getAuthToken(scope)
+				.then(({access_token, scope: scopeFact}) => {
+					if (!isEqualScope(scope, scopeFact)) {
+						const error = new VkSdkError("LESS_SCOPE_THAN_REQUEST")
+						error.type = VkSdkError.ACCESS_ERROR
+						throw error
+					}
+					if (!access_token) {
+						const error = new VkSdkError("ACCESS_TOKEN_NOT_RETURNED_FROM_VK")
+						error.type = VkSdkError.ACCESS_ERROR
+						throw error
+					}
+					VkSdk.tokenCache[scope] = access_token
+					return VkSdk.api(method, params, scope, retry - 1)
+				})
+				.catch(e => {
+					if (isVkApiError(e)) {
+						throw castToVkApi(e)
+					}
+					throw castToError(e)
+				})
+		}
+
+		if (!params.access_token) {
+			params.access_token = VkSdk.tokenCache[scope]
+		}
+
+		return VkSdk.callAPIMethod(method, params)
+			.catch(e => {
+				if (!isVkApiError(e)) {
+					throw castToError(e)
+				}
+				const vkError = castToVkApi(e)
+				if (retry <= 0) {
+					throw vkError
+				}
+				if (vkError.code === VK_API_AUTH_FAIL) {
+					delete VkSdk.tokenCache[scope]
+					return VkSdk.api(method, params, scope, retry - 1)
+				}
+				if (SOFT_ERROR_CODES.indexOf(vkError.code) !== -1) {
+					return delay(300)
+						.then(() => VkSdk.api(method, params, scope, retry - 1))
+				}
+				throw vkError
+			})
 	}
 
 	/**
@@ -286,7 +469,10 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static scroll(top, speed = 100) {
-		return new VkConnectRequest('VKWebAppScroll', {top, speed}, 'VKWebAppScrollResult', 'VKWebAppScrollFailed').send()
+		return new VkConnectRequest('VKWebAppScroll', {
+			top,
+			speed
+		}, 'VKWebAppScrollResult', 'VKWebAppScrollFailed').send()
 	}
 
 	/**
