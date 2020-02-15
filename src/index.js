@@ -90,12 +90,28 @@ export function castToError(object) {
 	}
 	if (object && object.error_type) {
 		error.type = object.error_type
+		//На андроиде такая ошибка приходит при остуствии интернета и запросе токена
+		if (error.type === 'auth_error') {
+			error.type = VkSdkError.CLIENT_ERROR
+		}
 	}
+
+	//На iOS такой набор ошибок в случек пропаши интернета и вызове сетода апи
 	if (error.code === 3 && error.type === 'client_error') {
 		error.type = VkSdkError.NETWORK_ERROR
 	}
 	if (error.code === 4 && error.type === 'client_error') {
 		error.type = VkSdkError.ACCESS_ERROR
+	}
+
+	// Кастуем ситацию запроса токена и отстуствия интернета на андроид
+	if (object && object.error_type && object.error_type === 'auth_error') {
+		if (object && object.error_data) {
+			const data = object.error_data
+			if (data.error_reason === "" && data.error === "") {
+				error.type = VkSdkError.NETWORK_ERROR
+			}
+		}
 	}
 	return error
 }
