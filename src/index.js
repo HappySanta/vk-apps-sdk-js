@@ -277,6 +277,7 @@ export default class VkSdk {
 	 * @returns {Promise<Object>}
 	 */
 	static api(method, params = {}, scope = "", retry = 5) {
+		const passedTokenInParams = !!params.access_token
 		if (!VkSdk.tokenCache[scope] && !params.access_token) {
 			return VkSdk.getAuthToken(scope)
 				.then(({access_token, scope: scopeFact}) => {
@@ -315,6 +316,9 @@ export default class VkSdk {
 					throw vkError
 				}
 				if (vkError.code === VK_API_AUTH_FAIL) {
+					if (passedTokenInParams) {
+						throw vkError
+					}
 					delete VkSdk.tokenCache[scope]
 					return VkSdk.api(method, params, scope, retry - 1)
 				}
