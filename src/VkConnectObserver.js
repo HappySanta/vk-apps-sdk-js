@@ -1,4 +1,4 @@
-import VKConnect from "@vkontakte/vkui-connect/index"
+import VKConnect from "@vkontakte/vk-connect"
 
 export default class VkConnectObserver {
 

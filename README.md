@@ -1,11 +1,10 @@
 # @happysanta/vk-apps-sdk
 
-JS SDK для VK apps.
-
 ## Установка
 
 ```sh
-$ npm i @happysanta/vk-apps-sdk
+npm i @happysanta/vk-apps-sdk
+npm i @vkontakte/vk-connect
 ```
 
 ```javascript
@@ -14,6 +13,7 @@ import VkSdk from "@happysanta/vk-apps-sdk"
 
 ## Методы
 
+* [.api()](#api)
 * [.getStartParams()](#getstartparams)
 * [.subscribeEvent()](#subscribeevent)
 * [.unsubscribeEvent()](#unsubscribeevent)
@@ -41,6 +41,74 @@ import VkSdk from "@happysanta/vk-apps-sdk"
 * [.scroll()](#scroll)
 * [.resizeWindow()](#resizewindow)
 * [.getPersonalCard()](#getpersonalcard)
+
+### api
+
+Вызов метода vk api с запросом прав на токен.
+Этот метод сам запросит права через getAuthToken с указаным scope и перезапросит токен если ip поменяется
+в случае ошибок вернет объект ошибку типа ```VkSdkError``` с полями
+ - ```message``` string
+ - ```code``` number код ошибки
+ - ```type``` string одна из констант ```VkSdkError.UNKNOWN_TYPE|VkSdkError.CLIENT_ERROR|VkSdkError.API_ERROR|VkSdkError.NETWORK_ERROR|VkSdkError.ACCESS_ERROR```
+
+Запрос может быть отправлен повторно если апи вк вернет один из следующих кодов
+ - 1 VK_API_UNKNOWN_ERROR, //Произошла неизвестная ошибка. 
+ - 6 VK_API_TOO_MANY_REQUEST, //Слишком много запросов в секунду.
+ - 9 VK_API_TOO_MANY_SAME_ACTIONS, //Слишком много однотипных действий.
+ 
+Чобы отключить это поведение передайте ```retry``` аргумент равный 0
+
+Если передать access_token в объекте params, то запрос прав вызван не будет, используйте это если у вас уже есть access_token 
+
+Приимер использования с обработкой ошибок
+
+```javascript
+/**
+ * Вызов методов API с запросов токена если нужно
+ * Позволяет получить результат вызова метода API ВКонтакте.
+ * @param {string} method - название метода API. {@url https://vk.com/dev/methods}
+ * @param {Object} params - параметры метода в виде JSON
+ * @param {string|null} scope - права необходимые для этого запроса, через запятую
+ * @param {Number} retry - допустимое количество повторов которое можно сделать если с первого раза не получится
+ * @throws VkSdkError
+ * @returns {Promise<Object>}
+ */
+VkSdk.api("users.get", {}, "friends")
+.then(({response}) => {
+
+})
+.catch(e => {
+    switch (e.type) {
+        case VkSdkError.NETWORK_ERROR:
+            return this.setState({
+                error: "Ошибка сети"
+            })
+
+        case VkSdkError.ACCESS_ERROR:
+            return this.setState({
+                error: "Не выдан достп или вы отредактировали доступы"
+            })
+
+        case VkSdkError.API_ERROR:
+            return this.setState({
+                error: "Ошибка апи: "+e.message +' '+e.code
+            })
+/// Следующие типы ошибок никогда не должны быть показаны, но теоритически возможны 
+        case VkSdkError.CLIENT_ERROR:
+            return this.setState({
+                error: "Не известная ошибка от вк коннект: "+e.message +' '+e.code
+            })
+        case VkSdkError.UNKNOWN_TYPE:
+            return this.setState({
+                error: "Не известная ошибка от неисзвестно чего: "+e.message +' '+e.code
+            })
+        default:
+            return this.setState({
+                error: "Супер неизвестная ошибка"
+            })
+    }
+})
+```
 
 ### getStartParams
 
