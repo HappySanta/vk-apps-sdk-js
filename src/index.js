@@ -294,7 +294,8 @@ export default class VkSdk {
 	 */
 	static api(method, params = {}, scope = "", retry = 5) {
 		const passedTokenInParams = !!params.access_token
-		if (!VkSdk.tokenCache[scope] && !params.access_token) {
+		const p = {...params}
+		if (!VkSdk.tokenCache[scope] && !p.access_token) {
 			return VkSdk.getAuthToken(scope)
 				.then(({access_token, scope: scopeFact}) => {
 					if (!isEqualScope(scope, scopeFact)) {
@@ -318,11 +319,11 @@ export default class VkSdk {
 				})
 		}
 
-		if (!params.access_token) {
-			params.access_token = VkSdk.tokenCache[scope]
+		if (!p.access_token) {
+			p.access_token = VkSdk.tokenCache[scope]
 		}
 
-		return VkSdk.callAPIMethod(method, params)
+		return VkSdk.callAPIMethod(method, p)
 			.catch(e => {
 				if (!isVkApiError(e)) {
 					throw castToError(e)
