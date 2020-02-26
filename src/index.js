@@ -82,6 +82,7 @@ export function castToError(object) {
 		return object
 	}
 	const error = new VkSdkError(JSON.stringify(object) || "SUPER UNKNOWN ERROR BY @happysanta/vk-apps-sdk library")
+	error.origin = object
 	if (object && object.error_data && object.error_data.error_reason) {
 		error.message = `#${object.error_data.error_code} ${object.error_data.error_reason}`
 	}
@@ -110,6 +111,18 @@ export function castToError(object) {
 			const data = object.error_data
 			if (data.error_reason === "" && data.error === "") {
 				error.type = VkSdkError.NETWORK_ERROR
+			}
+		}
+	}
+
+	// Обработка ситации запроса токена и отстуствия интернета на iOS https://vk.com/bug204658
+	if (object && object.error_type && object.error_type === 'auth_error') {
+		if (object && object.error_data) {
+			const data = object.error_data
+			// Коды ошибок подсмотрели тут https://github.com/apple/swift/blob/3a75394c670bb7143397327ac7bf5b5fe8d50588/stdlib/public/SDK/Foundation/NSError.swift#L642
+			if (data.error_code < 0 && data.error_code > -4000) {
+				error.type = VkSdkError.NETWORK_ERROR
+				error.message = data.error_description || error.message
 			}
 		}
 	}
