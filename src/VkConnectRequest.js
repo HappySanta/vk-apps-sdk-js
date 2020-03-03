@@ -1,11 +1,6 @@
-import VKConnect from "@vkontakte/vk-connect"
+import VKConnect from "@vkontakte/vk-bridge"
 
-export class VkConnectRequest {
-
-	command
-	params
-	successEvent
-	failEvent
+export default class VkConnectRequest {
 
 	constructor(command, params = {}, successEvent = undefined, failEvent = undefined) {
 		this.command = command
@@ -49,7 +44,8 @@ export class VkConnectRequest {
 				VKConnect.subscribe(callback)
 			}
 
-			VKConnect.send(this.command, this.params).catch(() => {})
+			VKConnect.send(this.command, this.params).catch(() => {
+			})
 		})
 	}
 }

@@ -1,4 +1,4 @@
-import VKConnect from "@vkontakte/vk-connect"
+import VKConnect from "@vkontakte/vk-bridge"
 
 export default class VkConnectObserver {
 
@@ -27,8 +27,8 @@ export default class VkConnectObserver {
         let eventType = vkEvent['type']
         let data = vkEvent['data']
         VkConnectObserver.subjects.forEach(subject => {
-            if (subject.eventType === eventType) {
-                subject.callback(data)
+            if (subject.eventType === eventType || subject.eventType === "*") {
+                subject.callback(data, eventType)
             }
         })
     }

@@ -1,8 +1,10 @@
 import queryString from 'query-string'
 import VkStartParamsBuilder from "./VkStartParamsBuilder"
-import {VkConnectRequest} from "./VkConnectRequest"
 import VkConnectObserver from "./VkConnectObserver"
-import VKConnect from "@vkontakte/vk-connect"
+import VKBridge from "@vkontakte/vk-bridge"
+import VkConnectRequest from "./VkConnectRequest"
+
+export const VkConnectRequestClass = VkConnectRequest
 
 export class VkSdkError extends Error {
 
@@ -17,6 +19,7 @@ export class VkSdkError extends Error {
 		this.message = message
 		this.type = VkSdkError.UNKNOWN_TYPE
 		this.code = 0
+		this.retry = 0
 	}
 }
 
@@ -136,7 +139,7 @@ export const VK_API_TOO_MANY_REQUEST = 6
 export const VK_API_TOO_MANY_SAME_ACTIONS = 9
 
 /*
-Считается что если вызов апи вернулся с этим кодом, то запрос можно повторить
+Считается @in что если вызов апи вернулся с этим кодом, то запрос можно повторить
  */
 export const SOFT_ERROR_CODES = [
 	VK_API_UNKNOWN_ERROR, //Произошла неизвестная ошибка.
@@ -171,6 +174,7 @@ export default class VkSdk {
 	 * Подписаться на соббытие VkConnect
 	 * @param {string} event - Тип события VkConnect
 	 * @param {function} callback - колбек
+	 * @deprecated
 	 */
 	static subscribeEvent(event, callback) {
 		VkConnectObserver.subscribe(event, callback)
@@ -180,21 +184,37 @@ export default class VkSdk {
 	 * Отписаться от соббытия VkConnect
 	 * @param {string} event - Тип события VkConnect
 	 * @param {function} callback - колбек
+	 * @deprecated
 	 */
 	static unsubscribeEvent(event, callback) {
 		VkConnectObserver.unsubscribe(event, callback)
 	}
 
 	/**
-	 * Возвращает объект для запроса в VkConnect
-	 * @param command - Команда в VkConnect
-	 * @param params - параметры запроса
-	 * @param successEvent - колбек при успешном выполнении
-	 * @param failEvent - колбек при неуспешном выполнении
-	 * @returns {VkConnectRequest}
+	 * Подписаться на соббытие VkConnect
+	 * @param {string} event - Тип события VkConnect
+	 * @param {function} callback - колбек
 	 */
-	static getRequest(command, params = {}, successEvent = undefined, failEvent = undefined) {
-		return new VkConnectRequest(command, params, successEvent, failEvent)
+	static subscribe(event, callback) {
+		VkConnectObserver.subscribe(event, callback)
+	}
+
+	/**
+	 * Отписаться от соббытия VkConnect
+	 * @param {string} event - Тип события VkConnect
+	 * @param {function} callback - колбек
+	 */
+	static unsubscribe(event, callback) {
+		VkConnectObserver.unsubscribe(event, callback)
+	}
+
+	/**
+	 * Проверяет, поддерживается ли событие на текущей платформе.
+	 * @param {string} method
+	 * @return {boolean}
+	 */
+	static supports(method) {
+		return VKBridge.supports(method)
 	}
 
 	/**
@@ -203,7 +223,7 @@ export default class VkSdk {
 	 * В противном случае сервис может не работать на мобильных клиентах iOS и Android.
 	 */
 	static init() {
-		return new VkConnectRequest('VKWebAppInit', {}).send()
+		return VKBridge.send("VKWebAppInit", {})
 	}
 
 	/**
@@ -212,8 +232,7 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static getUserInfo() {
-		return new VkConnectRequest('VKWebAppGetUserInfo', {},
-			'VKWebAppGetUserInfoResult', 'VKWebAppGetUserInfoFailed').send()
+		return VKBridge.send('VKWebAppGetUserInfo', {})
 	}
 
 	/**
@@ -223,7 +242,7 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static getPhoneNumber() {
-		return new VkConnectRequest('VKWebAppGetPhoneNumber', {}, 'VKWebAppGetPhoneNumberResult', 'VKWebAppGetPhoneNumberFailed').send()
+		return VKBridge.send('VKWebAppGetPhoneNumber', {})
 	}
 
 	/**
@@ -233,7 +252,7 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static getEmail() {
-		return new VkConnectRequest('VKWebAppGetEmail', {}, 'VKWebAppGetEmailResult', 'VKWebAppGetEmailFailed').send()
+		return VKBridge.send('VKWebAppGetEmail', {})
 	}
 
 	/**
@@ -243,16 +262,16 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static getGeodata() {
-		return new VkConnectRequest('VKWebAppGetGeodata', {}, 'VKWebAppGeodataResult', 'VKWebAppGeodataFailed').send()
+		return VKBridge.send('VKWebAppGetGeodata', {})
 	}
 
 	/**
 	 * Выбор контакта из телефонной книги
 	 * Открывает окно выбора контактов из телефонной книги на устройстве пользователя.
-	 * @returns {Promise}
+	 * @returns {Promise<{phone:string,first_name:string}>}
 	 */
 	static openContacts() {
-		return new VkConnectRequest('VKWebAppOpenContacts', {}, 'VKWebAppContactsDone', 'VKWebAppContactsClosed').send()
+		return VKBridge.send('VKWebAppOpenContacts', {})
 	}
 
 	/**
@@ -260,14 +279,14 @@ export default class VkSdk {
 	 * Позволяет запросить права доступа у пользователя и получить ключ для работы с API.
 	 * Для получения токена без дополнительных прав передайте в параметре пустую строку.
 	 * @param {string} scope - Список прав доступа, перечисленных через запятую. {@url  https://vk.com/dev/permissions}
+	 * @param {number|null} appId
 	 * @returns {Promise}
 	 */
-	static getAuthToken(scope = '') {
+	static getAuthToken(scope = '', appId = null) {
 		const params = {
-			app_id: this.getStartParams().appId, scope
+			app_id: appId || this.getStartParams().appId, scope
 		}
-		return (new VkConnectRequest('VKWebAppGetAuthToken', params, 'VKWebAppAccessTokenReceived', 'VKWebAppAccessTokenFailed'))
-			.send()
+		return VKBridge.send('VKWebAppGetAuthToken', params)
 			.catch(e => {
 				e = castToError(e)
 				e.message = "VKWebAppGetAuthToken error " + JSON.stringify(params) + ": " + e.message
@@ -282,17 +301,13 @@ export default class VkSdk {
 	 * полученный с помощью VKWebAppGetAuthToken {@see getAuthToken}
 	 * @param {string} method - название метода API. {@url https://vk.com/dev/methods}
 	 * @param {Object} params - параметры метода в виде JSON
-	 * @param {string} requestId - произвольная строка, которая вернётся вместе с результатом запроса.
-	 * Используйте requestId для отслеживания уникальности запросов.
 	 * @returns {Promise}
 	 */
-	static callAPIMethod(method, params = {}, requestId = undefined) {
+	static callAPIMethod(method, params = {}) {
 		if (params.v === undefined) {
 			params.v = VkSdk.defaultApiVersion
 		}
-		return new VkConnectRequest('VKWebAppCallAPIMethod', {
-			method, params
-		}, 'VKWebAppCallAPIMethodResult', 'VKWebAppCallAPIMethodFailed').send(requestId)
+		return VKBridge.send('VKWebAppCallAPIMethod', {method, params})
 	}
 
 	/**
@@ -305,7 +320,7 @@ export default class VkSdk {
 	 * @throws VkSdkError
 	 * @returns {Promise<Object>}
 	 */
-	static api(method, params = {}, scope = "", retry = 5) {
+	static api(method, params = {}, scope = "", retry = 7) {
 		const passedTokenInParams = !!params.access_token
 		const p = {...params}
 		if (!VkSdk.tokenCache[scope] && !p.access_token) {
@@ -313,11 +328,13 @@ export default class VkSdk {
 				.then(({access_token, scope: scopeFact}) => {
 					if (!isEqualScope(scope, scopeFact)) {
 						const error = new VkSdkError("LESS_SCOPE_THAN_REQUEST")
+						error.retry = retry
 						error.type = VkSdkError.ACCESS_ERROR
 						throw error
 					}
 					if (!access_token) {
 						const error = new VkSdkError("ACCESS_TOKEN_NOT_RETURNED_FROM_VK")
+						error.retry = retry
 						error.type = VkSdkError.ACCESS_ERROR
 						throw error
 					}
@@ -325,10 +342,9 @@ export default class VkSdk {
 					return VkSdk.api(method, params, scope, retry - 1)
 				})
 				.catch(e => {
-					if (isVkApiError(e)) {
-						throw castToVkApi(e)
-					}
-					throw castToError(e)
+					const err = isVkApiError(e) ? castToVkApi(e) : castToError(e)
+					err.retry = retry
+					throw e
 				})
 		}
 
@@ -339,9 +355,12 @@ export default class VkSdk {
 		return VkSdk.callAPIMethod(method, p)
 			.catch(e => {
 				if (!isVkApiError(e)) {
-					throw castToError(e)
+					const e = castToError(e)
+					e.retry = retry
+					throw e
 				}
 				const vkError = castToVkApi(e)
+				vkError.retry = retry
 				if (retry <= 0) {
 					throw vkError
 				}
@@ -366,7 +385,7 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static share(link = undefined) {
-		return new VkConnectRequest('VKWebAppShare', {link}, 'VKWebAppShareResult', 'VKWebAppShareFailed').send()
+		return VKBridge.send('VKWebAppShare', {link})
 	}
 
 	/**
@@ -376,8 +395,21 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static showWallPostBox(params = {}) {
-		return new VkConnectRequest('VKWebAppShowWallPostBox', params,
-			'VKWebAppShowWallPostBoxResult', 'VKWebAppShowWallPostBoxFailed').send()
+		return VKBridge.send('VKWebAppShowWallPostBox', params)
+	}
+
+	/**
+	 * Нативный просмотр изображений iOS, Android
+	 * @param {string[]} images
+	 * @param {number} start_index
+	 * @return {Promise}
+	 */
+	static showImages(images, start_index = 0) {
+		return VKBridge.send("VKWebAppShowImages", {images, start_index})
+	}
+
+	static canShowImage() {
+		return VKBridge.supports("VKWebAppShowImages")
 	}
 
 	/**
@@ -386,20 +418,19 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static getClientVersion() {
-		return new VkConnectRequest('VKWebAppGetClientVersion', {}, 'VKWebAppGetClientVersionResult').send()
+		return VKBridge.send('VKWebAppGetClientVersion', {})
 	}
 
 	/**
 	 * Платёж VK Pay
 	 * Поднимает экран VK Pay для платежа
-	 * @param {string} action - pay-to-service|pay-to-user|pay-to-group
-	 * @param {Object} params - параметры платёжной формы VK Pay
+	 * @param {"pay-to-service"|"pay-to-user"|"pay-to-group"|"transfer-to-group"|"transfer-to-user"} action -
+	 * @param {{amount:number,description:string,data:object,group_id:number}|{amount:number,description:string,user_id:number}|{description:string,user_id:number}|{description:string,group_id:number}} params - параметры платёжной формы VK Pay
+	 * @param {number|null} appId
 	 * @returns {Promise}
 	 */
-	static openPayForm(action, params) {
-		return new VkConnectRequest('VKWebAppOpenPayForm', {
-			app_id: this.getStartParams().appId, action, params
-		}, 'VKWebAppOpenPayFormResult', 'VKWebAppOpenPayFormFailed').send()
+	static openPayForm(action, params, appId = null) {
+		return VKBridge.send('VKWebAppOpenPayForm', {app_id: appId || VkSdk.getStartParams().appId, action, params})
 	}
 
 	/**
@@ -408,8 +439,7 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static allowNotifications() {
-		return new VkConnectRequest('VKWebAppAllowNotifications', {},
-			'VKWebAppAllowNotificationsResult', 'VKWebAppAllowNotificationsFailed').send()
+		return VKBridge.send("VKWebAppAllowNotifications", {})
 	}
 
 	/**
@@ -418,8 +448,39 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static denyNotifications() {
-		return new VkConnectRequest('VKWebAppDenyNotifications', {},
-			'VKWebAppDenyNotificationsResult', 'VKWebAppDenyNotificationsFailed').send()
+		return VKBridge.send('VKWebAppDenyNotifications', {})
+	}
+
+	/**
+	 * Добавление сервиса в избранные
+	 * вызывает окно запроса на добавление сервиса в избранное.
+	 * @return {Promise<{result:boolean}>}
+	 */
+	static addToFavorites() {
+		return VKBridge.send("VKWebAppAddToFavorites", {})
+	}
+
+	/**
+	 * Сканирование QR-кода
+	 * позволяет открыть камеру для считывания QR-кода и получить результат сканирования. (только для мобильных устройств)
+	 * @return {Promise<{code_data:string}>}
+	 */
+	static openCodeReader() {
+		return VKBridge.send("VKWebAppOpenCodeReader", {})
+	}
+
+	static canOpenCodeReader() {
+		return VKBridge.supports("VKWebAppOpenCodeReader")
+	}
+
+	/**
+	 * Сканирование QR-кода
+	 * Позволяет открыть камеру для считывания QR-кода и получить результат сканирования.
+	 * @deprecated openCodeReader
+	 * @returns {Promise}
+	 */
+	static openQR() {
+		return VKBridge.send('VKWebAppOpenQR', {})
 	}
 
 	/**
@@ -428,8 +489,7 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static setLocation(location) {
-		return new VkConnectRequest('VKWebAppSetLocation', {location},
-			'VKWebAppSetLocationResult', 'VKWebAppSetLocationFailed').send()
+		return VKBridge.send('VKWebAppSetLocation', {location})
 	}
 
 	/**
@@ -441,9 +501,57 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static allowMessagesFromGroup(groupId, key) {
-		return new VkConnectRequest('VKWebAppAllowMessagesFromGroup', {
-			group_id: groupId, key
-		}, 'VKWebAppAllowMessagesFromGroupResult', 'VKWebAppAllowMessagesFromGroupFailed').send()
+		return VKBridge.send('VKWebAppAllowMessagesFromGroup', {group_id: groupId, key})
+	}
+
+	/**
+	 * Получение токена сообщества
+	 * @param {string} scope stories,photos,app_widget,messages,docs,manage
+	 * @param {number|null} groupId
+	 * @param {number|null} appId
+	 */
+	static getCommunityAuthToken(scope = "messages", groupId = null, appId = null) {
+		return VKBridge.send("VKWebAppGetCommunityAuthToken", {
+			scope,
+			app_id: appId || VkSdk.getStartParams().appId,
+			group_id: groupId || VkSdk.getStartParams().groupId
+		})
+	}
+
+	/**
+	 * Добавление сервиса в сообщество
+	 * Обратите внимание: для вызова в управлении приложением https://vk.com/editapp?id={app_id}
+	 * должна быть установлена галочка напротив "Разрешить установку в сообществах".
+	 * Приложение должно быть включено и доступно всем.
+	 * @return {Promise<{group_id:number}>}
+	 */
+	static addToCommunity() {
+		return VKBridge.send("VKWebAppAddToCommunity", {})
+	}
+
+	/**
+	 * Предпросмотр виджета сообщества
+	 * Виджетам приложений сообществ посвящено отдельное руководство. (https://vk.com/dev/objects/appWidget) (https://vk.com/dev/apps_widgets)
+	 * @param {"text" | "list" | "table" | "tiles" | "compact_list" | "cover_list" | "match" | "matches"} type
+	 * @param {string} code
+	 * @param {number|null}groupId
+	 * @return {Promise<{result:boolean}>}
+	 */
+	static showCommunityWidgetPreviewBox(type, code, groupId = null) {
+		return VKBridge.send("VKWebAppShowCommunityWidgetPreviewBox", {
+			type, code, group_id: groupId || VkSdk.getStartParams().groupId
+		})
+	}
+
+
+	/**
+	 * Отправка события в сообщество
+	 * @param payload
+	 * @param {number|null} groupId
+	 * @return {Promise<{result:boolean}>}
+	 */
+	static sendPayload(payload, groupId = null) {
+		return VKBridge.send("VKWebAppSendPayload", {group_id: groupId || VkSdk.getStartParams().groupId, payload})
 	}
 
 	/**
@@ -453,17 +561,7 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static joinGroup(groupId) {
-		return new VkConnectRequest('VKWebAppJoinGroup', {group_id: groupId},
-			'VKWebAppJoinGroupResult', 'VKWebAppJoinGroupFailed').send()
-	}
-
-	/**
-	 * Сканирование QR-кода
-	 * Позволяет открыть камеру для считывания QR-кода и получить результат сканирования.
-	 * @returns {Promise}
-	 */
-	static openQR() {
-		return new VkConnectRequest('VKWebAppOpenQR', {}, 'VKWebAppOpenQRResult', 'VKWebAppOpenQRFailed').send()
+		return VKBridge.send('VKWebAppJoinGroup', {group_id: groupId})
 	}
 
 	/**
@@ -473,26 +571,68 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static openApp(appId, location = '') {
-		return new VkConnectRequest('VKWebAppOpenApp', {
-			app_id: appId, location
-		}, 'VKWebAppOpenAppResult', 'VKWebAppOpenAppFailed').send()
+		return VKBridge.send('VKWebAppOpenApp', {app_id: appId, location})
 	}
+
+	/**
+	 * @return {boolean}
+	 */
+	static canOpenApp() {
+		return VKBridge.supports('VKWebAppOpenApp')
+	}
+
+
+	/**
+	 * Закрытие приложения
+	 * @param {"success"|"failed"} status
+	 * @param {object} payload
+	 * @return {Promise}
+	 */
+	static close(status = "success", payload = {}) {
+		return VKBridge.send("VKWebAppClose", {status, payload})
+	}
+
+	static canClose() {
+		return VKBridge.supports("VKWebAppClose")
+	}
+
+	/**
+	 * Копирование текста в буфер обмена
+	 * @param text
+	 * @return {Promise<{result:boolean}>}
+	 */
+	static copyText(text) {
+		return VKBridge.send("VKWebAppCopyText", {text})
+	}
+
+	/**
+	 *
+	 * @return {boolean}
+	 */
+	static canCopyText() {
+		return VKBridge.supports("VKWebAppCopyText")
+	}
+
 
 	/**
 	 * Изменение внешнего вида клиента
 	 * Клиент устанавливает тему для иконок в статус-баре исходя из параметра
 	 * status_bar_style и цвет статус-бара исходя из параметра action_bar_color.
-	 * @param {string} statusBarStyle - тема для иконок статус-бара. Возможные варианты: "light", "dark"
+	 * @param {"light" | "dark"} statusBarStyle - тема для иконок статус-бара. Возможные варианты: "light", "dark"
 	 * @param {string} actionBarColor - 	цвет экшн-бара. Возможные варианты: hex-код (#00ffff), "none" - прозрачный.
+	 * @param {string} navigation_bar_color цвет нав-бара. Возможные варианты: hex-код (#00ffff). Работает только на Android
 	 * Параметр работает только на Android
 	 * @returns {Promise}
 	 */
-	static setViewSettings(statusBarStyle, actionBarColor = undefined) {
+	static setViewSettings(statusBarStyle, actionBarColor = undefined, navigation_bar_color = undefined) {
 		let params = {status_bar_style: statusBarStyle}
 		if (actionBarColor) {
 			params.action_bar_color = actionBarColor
 		}
-		return new VkConnectRequest('VKWebAppSetViewSettings', params, 'VKWebAppSetViewSettingsResult', 'VKWebAppSetViewSettingsFailed').send()
+		if (navigation_bar_color) {
+			params.navigation_bar_color
+		}
+		return VKBridge.send('VKWebAppSetViewSettings', params)
 	}
 
 	/**
@@ -503,10 +643,7 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static scroll(top, speed = 100) {
-		return new VkConnectRequest('VKWebAppScroll', {
-			top,
-			speed
-		}, 'VKWebAppScrollResult', 'VKWebAppScrollFailed').send()
+		return VKBridge.send('VKWebAppScroll', {top, speed})
 	}
 
 	/**
@@ -517,23 +654,76 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static resizeWindow(width, height) {
-		return new VkConnectRequest('VKWebAppResizeWindow', {width, height},
-			'VKWebAppResizeWindowResult', 'VKWebAppResizeWindowFailed').send()
+		return VKBridge.send('VKWebAppResizeWindow', {width, height})
 	}
 
 	/**
 	 * Вызов карточки контактов
 	 * «Карточка контактов» — это то место, где пользователь указывает контактные данные (номер телефона, адрес, e-mail),
 	 * которыми он готов поделиться с сервисами сторонних разработчиков.
-	 * @param {array} type - массив строк. Возможные значения: phone, email, address
+	 * @param {"phone"|"email"|"address"[]} type - массив строк. Возможные значения: phone, email, address
 	 * @returns {Promise}
 	 */
 	static getPersonalCard(type) {
-		return new VkConnectRequest('VKWebAppGetPersonalCard', {type},
-			'VKWebAppGetPersonalCardResult', 'VKWebAppGetPersonalCardFailed').send()
+		return VKBridge.send('VKWebAppGetPersonalCard', {type})
 	}
 
+
+	/**
+	 * Вызов списка друзей пользователя
+	 * @param multi
+	 * @return {Promise<{users:{id:number,first_name:string,last_name:string}[]}>}
+	 */
+	static getFriends(multi) {
+		return VKBridge.send("VKWebAppGetFriends", {multi})
+	}
+
+	/**
+	 * @deprecated use getVkBridge
+	 * @return {VKBridge}
+	 */
 	static getVkConnect() {
-		return VKConnect
+		return VKBridge
+	}
+
+	static getVkBridge() {
+		return VKBridge
+	}
+
+	/**
+	 * Получение значения ключа
+	 * @param {string[]} keys
+	 * @return {Promise<{keys:{key:string,value:string}[]}>}
+	 */
+	static storageGet(keys) {
+		return VKBridge.send("VKWebAppStorageGet", {keys})
+	}
+
+	/**
+	 * Установка значения переменной
+	 * @param {string} key
+	 * @param {string} value
+	 * @return {Promise<{result:boolean}>}
+	 */
+	static storageSet(key, value) {
+		return VKBridge.send("VKWebAppStorageSet", {key, value})
+	}
+
+	/**
+	 * Получение ключей
+	 * @param {number} count
+	 * @param {number} offset
+	 */
+	static storageGetKeys(count = 20, offset = 0) {
+		return VKBridge.send("VKWebAppStorageGetKeys", {count, offset})
+	}
+
+	/**
+	 * @param method
+	 * @param params
+	 * @return {Promise}
+	 */
+	static send(method, params) {
+		return VKBridge.send(method, params)
 	}
 }

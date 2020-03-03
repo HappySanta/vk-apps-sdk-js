@@ -1,4 +1,3 @@
-
 export default class VkStartParams {
 
 	static LANG_RUS = 'ru'
@@ -16,20 +15,20 @@ export default class VkStartParams {
 	static VIEWER_GROUP_ROLE_MEMBER = 'member'
 	static VIEWER_GROUP_ROLE_NOBODY = 'none'
 
-    /**
-     * vk_user_id (integer) — идентификатор пользователя, запустившего сервис.
-     * @returns {number}
-     */
-    get userId() {
-        return this._userId
-    }
+	/**
+	 * vk_user_id (integer) — идентификатор пользователя, запустившего сервис.
+	 * @returns {number}
+	 */
+	get userId() {
+		return this._userId
+	}
 
-    /**
-     * @param {number} value
-     */
-    set userId(value) {
-        this._userId = value
-    }
+	/**
+	 * @param {number} value
+	 */
+	set userId(value) {
+		this._userId = value
+	}
 
 	/**
 	 *	vk_app_id (integer) — идентификатор запущенного приложения.
@@ -46,80 +45,80 @@ export default class VkStartParams {
 		this._appId = value
 	}
 
-    /**
-     * vk_is_app_user (integer, [0,1]) — если пользователь установил приложение, содержит 1, иначе — 0.
-     * @returns {boolean}
-     */
-    get isAppUser() {
-        return this._isAppUser
-    }
-
-    /**
-     * @param {boolean} value
-     */
-    set isAppUser(value) {
-        this._isAppUser = value
-    }
-
-    /**
-     * vk_is_app_user (integer, [0,1]) — если пользователь разрешил отправку уведомлений, содержит 1, иначе — 0.
-     * @returns {boolean}
-     */
-    get areNotificationsEnabled() {
-        return this._areNotificationsEnabled
-    }
-
-    /**
-     * @param {boolean} value
-     */
-	set areNotificationsEnabled(value) {
-    	this._areNotificationsEnabled = value
+	/**
+	 * vk_is_app_user (integer, [0,1]) — если пользователь установил приложение, содержит 1, иначе — 0.
+	 * @returns {boolean}
+	 */
+	get isAppUser() {
+		return this._isAppUser
 	}
 
-    /**
-     * vk_language (string) — идентификатор языка пользователя, просматривающего приложение (см. список языков ниже).
-     * @returns {string}
-     */
-    get language() {
-        return this._language
-    }
+	/**
+	 * @param {boolean} value
+	 */
+	set isAppUser(value) {
+		this._isAppUser = value
+	}
 
-    /**
-     * @param {string} value
-     */
-    set language(value) {
-        this._language = value
-    }
+	/**
+	 * vk_is_app_user (integer, [0,1]) — если пользователь разрешил отправку уведомлений, содержит 1, иначе — 0.
+	 * @returns {boolean}
+	 */
+	get areNotificationsEnabled() {
+		return this._areNotificationsEnabled
+	}
 
-    /**
-     * vk_language (string) — список прав доступа текущего пользователя в приложении. (Например: friends, video, photos)
-     * @returns {string}
-     */
-    get accessTokenSettings() {
-        return this._accessTokenSettings
-    }
+	/**
+	 * @param {boolean} value
+	 */
+	set areNotificationsEnabled(value) {
+		this._areNotificationsEnabled = value
+	}
 
-    /**
-     * @param {string} value
-     */
-    set accessTokenSettings(value) {
-        this._accessTokenSettings = value
-    }
+	/**
+	 * vk_language (string) — идентификатор языка пользователя, просматривающего приложение (см. список языков ниже).
+	 * @returns {string}
+	 */
+	get language() {
+		return this._language
+	}
 
-    /**
-     * group_id (integer) — идентификатор сообщества, со страницы которого было запущено приложение
-     * @returns {number}
-     */
-    get groupId() {
-        return this._groupId;
-    }
+	/**
+	 * @param {string} value
+	 */
+	set language(value) {
+		this._language = value
+	}
 
-    /**
-     * @param {number} value
-     */
-    set groupId(value) {
-        this._groupId = parseInt(value, 10)
-    }
+	/**
+	 * vk_language (string) — список прав доступа текущего пользователя в приложении. (Например: friends, video, photos)
+	 * @returns {string}
+	 */
+	get accessTokenSettings() {
+		return this._accessTokenSettings
+	}
+
+	/**
+	 * @param {string} value
+	 */
+	set accessTokenSettings(value) {
+		this._accessTokenSettings = value
+	}
+
+	/**
+	 * group_id (integer) — идентификатор сообщества, со страницы которого было запущено приложение
+	 * @returns {number}
+	 */
+	get groupId() {
+		return this._groupId
+	}
+
+	/**
+	 * @param {number} value
+	 */
+	set groupId(value) {
+		this._groupId = parseInt(value, 10)
+	}
 
 	/**
 	 * vk_viewer_group_role (string) — роль пользователя в сообществе, из которого запущено приложение
@@ -131,14 +130,14 @@ export default class VkStartParams {
 	 * @returns {string}
 	 */
 	get viewerGroupRole() {
-		return this._viewerGroupRole;
+		return this._viewerGroupRole
 	}
 
 	/**
 	 * @param {string} value
 	 */
 	set viewerGroupRole(value) {
-		this._viewerGroupRole = value;
+		this._viewerGroupRole = value
 	}
 
 	/**
@@ -150,30 +149,55 @@ export default class VkStartParams {
 	 * @returns {string}
 	 */
 	get platform() {
-		return this._platform;
+		return this._platform
 	}
 
 	/**
 	 * @param {string} value
 	 */
 	set platform(value) {
-		this._platform = value;
+		this._platform = value
 	}
 
-    /**
-     * vk_sign (string) — подпись переданных параметров
-     * @returns {string}
-     */
-    get sign() {
-        return this._sign;
-    }
+	/**
+	 * vk_sign (string) — подпись переданных параметров
+	 * @returns {string}
+	 */
+	get sign() {
+		return this._sign
+	}
 
-    /**
-     * @param {string} value
-     */
-    set sign(value) {
-        this._sign = value
-    }
+	/**
+	 * @param {string} value
+	 */
+	set sign(value) {
+		this._sign = value
+	}
+
+	/**
+	 * @param {string} value
+	 */
+	set ref(value) {
+		this._ref = value
+	}
+
+	/**
+	 * @return {string}
+	 */
+	get ref() {
+		return this._ref
+	}
+
+	/**
+	 * @param {Boolean} value
+	 */
+	set isFavorite(value)  {
+		this._isFavorite = value
+	}
+
+	get isFavorite() {
+		return this._isFavorite
+	}
 
 	isInGroup() {
 		return this.groupId && this.groupId > 0
@@ -200,12 +224,12 @@ export default class VkStartParams {
 	}
 
 	isMobile() {
-    	return this.platform !== 'desktop_web'
+		return this.platform !== 'desktop_web'
 	}
 
-    /**
+	/**
 	 * @return string
-     */
+	 */
 	getLangCode() {
 		if (this.language === VkStartParams.LANG_UKR) {
 			return 'ua'
@@ -213,7 +237,7 @@ export default class VkStartParams {
 		return this.language
 	}
 
-    _userId
+	_userId
 	_appId
 	_isAppUser
 	_areNotificationsEnabled
@@ -223,4 +247,6 @@ export default class VkStartParams {
 	_viewerGroupRole
 	_platform
 	_sign
+	_ref
+	_isFavorite
 }
