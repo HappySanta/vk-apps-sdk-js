@@ -290,10 +290,41 @@ export default class VkSdk {
 		if (params.v === undefined) {
 			params.v = VkSdk.defaultApiVersion
 		}
+		if (VkSdk.callAPIMethodDelayUseLock) {
+			if (!VkSdk.callAPIMethodDelayLock) {
+				VkSdk.callAPIMethodDelayLock = true
+			} else {
+				return new Promise((resolve, reject) => {
+					VkSdk.callAPIMethodDelayRun.push( {
+						resolve, reject,
+						method, params, requestId
+					} )
+				})
+			}
+		}
 		return new VkConnectRequest('VKWebAppCallAPIMethod', {
 			method, params
-		}, 'VKWebAppCallAPIMethodResult', 'VKWebAppCallAPIMethodFailed').send(requestId)
+		}, 'VKWebAppCallAPIMethodResult', 'VKWebAppCallAPIMethodFailed').send(requestId, () => {
+			if (VkSdk.callAPIMethodDelayUseLock) {
+				VkSdk.callAPIMethodDelayLock = false
+				if (VkSdk.callAPIMethodDelayRun.length) {
+					const {
+						resolve, reject,
+						method, params, requestId
+					} = VkSdk.callAPIMethodDelayRun.shift()
+					VkSdk.callAPIMethod(method, params, requestId).then(resolve).catch(reject)
+				}
+			}
+		})
 	}
+
+	/*
+	Одновременный вызов двух callAPIMethod может давать эффект перепутаных запросов
+	Чтобы попробовать избежать этого надо установить флаг  callAPIMethodDelayUseLock = true
+	 */
+	static callAPIMethodDelayRun = []
+	static callAPIMethodDelayLock = false
+	static callAPIMethodDelayUseLock = false
 
 	/**
 	 * Вызов методов API с запросов токена если нужно

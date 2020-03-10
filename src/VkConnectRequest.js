@@ -14,7 +14,7 @@ export class VkConnectRequest {
 		this.failEvent = failEvent
 	}
 
-	send(requestId = undefined) {
+	send(requestId = undefined, onEnd = () => {}) {
 		return new Promise((resolve, reject) => {
 			if (this.successEvent !== undefined || this.failEvent !== undefined) {
 				const callback = (e) => {
@@ -28,6 +28,9 @@ export class VkConnectRequest {
 
 					const onFind = (data, isResolve) => {
 						VKConnect.unsubscribe(callback)
+						if (typeof onEnd === "function") {
+							setTimeout(onEnd,1)
+						}
 						isResolve ? resolve(data) : reject(data)
 					}
 
