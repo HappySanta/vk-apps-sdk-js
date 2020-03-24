@@ -100,10 +100,11 @@ export function castToError(object) {
 		}
 	}
 
-	//На iOS такой набор ошибок в случек пропаши интернета и вызове сетода апи
+	//На iOS такой набор ошибок в случае пропажи интернета во время вызова метода апи
 	if (error.code === 3 && error.type === 'client_error') {
 		error.type = VkSdkError.NETWORK_ERROR
 	}
+	//Пользователь что-то запретил
 	if (error.code === 4 && error.type === 'client_error') {
 		error.type = VkSdkError.ACCESS_ERROR
 	}
@@ -223,7 +224,9 @@ export default class VkSdk {
 	 * В противном случае сервис может не работать на мобильных клиентах iOS и Android.
 	 */
 	static init() {
-		return VKBridge.send("VKWebAppInit", {})
+		return VKBridge.send("VKWebAppInit", {}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -232,7 +235,9 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static getUserInfo() {
-		return VKBridge.send('VKWebAppGetUserInfo', {})
+		return VKBridge.send('VKWebAppGetUserInfo', {}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -242,7 +247,9 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static getPhoneNumber() {
-		return VKBridge.send('VKWebAppGetPhoneNumber', {})
+		return VKBridge.send('VKWebAppGetPhoneNumber', {}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -252,7 +259,9 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static getEmail() {
-		return VKBridge.send('VKWebAppGetEmail', {})
+		return VKBridge.send('VKWebAppGetEmail', {}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -262,7 +271,9 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static getGeodata() {
-		return VKBridge.send('VKWebAppGetGeodata', {})
+		return VKBridge.send('VKWebAppGetGeodata', {}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -271,7 +282,9 @@ export default class VkSdk {
 	 * @returns {Promise<{phone:string,first_name:string}>}
 	 */
 	static openContacts() {
-		return VKBridge.send('VKWebAppOpenContacts', {})
+		return VKBridge.send('VKWebAppOpenContacts', {}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -307,7 +320,9 @@ export default class VkSdk {
 		if (params.v === undefined) {
 			params.v = VkSdk.defaultApiVersion
 		}
-		return VKBridge.send('VKWebAppCallAPIMethod', {method, params})
+		return VKBridge.send('VKWebAppCallAPIMethod', {method, params}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -385,7 +400,9 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static share(link = undefined) {
-		return VKBridge.send('VKWebAppShare', {link})
+		return VKBridge.send('VKWebAppShare', {link}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -395,7 +412,9 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static showWallPostBox(params = {}) {
-		return VKBridge.send('VKWebAppShowWallPostBox', params)
+		return VKBridge.send('VKWebAppShowWallPostBox', params).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -405,7 +424,9 @@ export default class VkSdk {
 	 * @return {Promise}
 	 */
 	static showImages(images, start_index = 0) {
-		return VKBridge.send("VKWebAppShowImages", {images, start_index})
+		return VKBridge.send("VKWebAppShowImages", {images, start_index}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	static canShowImage() {
@@ -418,7 +439,9 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static getClientVersion() {
-		return VKBridge.send('VKWebAppGetClientVersion', {})
+		return VKBridge.send('VKWebAppGetClientVersion', {}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -430,7 +453,9 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static openPayForm(action, params, appId = null) {
-		return VKBridge.send('VKWebAppOpenPayForm', {app_id: appId || VkSdk.getStartParams().appId, action, params})
+		return VKBridge.send('VKWebAppOpenPayForm', {app_id: appId || VkSdk.getStartParams().appId, action, params}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -439,7 +464,9 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static allowNotifications() {
-		return VKBridge.send("VKWebAppAllowNotifications", {})
+		return VKBridge.send("VKWebAppAllowNotifications", {}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -448,7 +475,9 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static denyNotifications() {
-		return VKBridge.send('VKWebAppDenyNotifications', {})
+		return VKBridge.send('VKWebAppDenyNotifications', {}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -457,7 +486,9 @@ export default class VkSdk {
 	 * @return {Promise<{result:boolean}>}
 	 */
 	static addToFavorites() {
-		return VKBridge.send("VKWebAppAddToFavorites", {})
+		return VKBridge.send("VKWebAppAddToFavorites", {}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -466,7 +497,9 @@ export default class VkSdk {
 	 * @return {Promise<{code_data:string}>}
 	 */
 	static openCodeReader() {
-		return VKBridge.send("VKWebAppOpenCodeReader", {})
+		return VKBridge.send("VKWebAppOpenCodeReader", {}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	static canOpenCodeReader() {
@@ -480,7 +513,9 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static openQR() {
-		return VKBridge.send('VKWebAppOpenQR', {})
+		return VKBridge.send('VKWebAppOpenQR', {}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -489,7 +524,9 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static setLocation(location) {
-		return VKBridge.send('VKWebAppSetLocation', {location})
+		return VKBridge.send('VKWebAppSetLocation', {location}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -501,7 +538,9 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static allowMessagesFromGroup(groupId, key) {
-		return VKBridge.send('VKWebAppAllowMessagesFromGroup', {group_id: groupId, key})
+		return VKBridge.send('VKWebAppAllowMessagesFromGroup', {group_id: groupId, key}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -515,6 +554,8 @@ export default class VkSdk {
 			scope,
 			app_id: appId || VkSdk.getStartParams().appId,
 			group_id: groupId || VkSdk.getStartParams().groupId
+		}).catch(e => {
+			throw castToError(e)
 		})
 	}
 
@@ -526,7 +567,9 @@ export default class VkSdk {
 	 * @return {Promise<{group_id:number}>}
 	 */
 	static addToCommunity() {
-		return VKBridge.send("VKWebAppAddToCommunity", {})
+		return VKBridge.send("VKWebAppAddToCommunity", {}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -535,11 +578,14 @@ export default class VkSdk {
 	 * @param {"text" | "list" | "table" | "tiles" | "compact_list" | "cover_list" | "match" | "matches"} type
 	 * @param {string} code
 	 * @param {number|null}groupId
+	 * @throws VkSdkError
 	 * @return {Promise<{result:boolean}>}
 	 */
 	static showCommunityWidgetPreviewBox(type, code, groupId = null) {
 		return VKBridge.send("VKWebAppShowCommunityWidgetPreviewBox", {
 			type, code, group_id: groupId || VkSdk.getStartParams().groupId
+		}).catch(e => {
+			throw castToError(e)
 		})
 	}
 
@@ -551,7 +597,9 @@ export default class VkSdk {
 	 * @return {Promise<{result:boolean}>}
 	 */
 	static sendPayload(payload, groupId = null) {
-		return VKBridge.send("VKWebAppSendPayload", {group_id: groupId || VkSdk.getStartParams().groupId, payload})
+		return VKBridge.send("VKWebAppSendPayload", {group_id: groupId || VkSdk.getStartParams().groupId, payload}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -561,7 +609,9 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static joinGroup(groupId) {
-		return VKBridge.send('VKWebAppJoinGroup', {group_id: groupId})
+		return VKBridge.send('VKWebAppJoinGroup', {group_id: groupId}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -571,14 +621,18 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static openApp(appId, location = '') {
-		return VKBridge.send('VKWebAppOpenApp', {app_id: appId, location})
+		return VKBridge.send('VKWebAppOpenApp', {app_id: appId, location}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
 	 * @return {boolean}
 	 */
 	static canOpenApp() {
-		return VKBridge.supports('VKWebAppOpenApp')
+		return VKBridge.supports('VKWebAppOpenApp').catch(e => {
+			throw castToError(e)
+		})
 	}
 
 
@@ -589,7 +643,9 @@ export default class VkSdk {
 	 * @return {Promise}
 	 */
 	static close(status = "success", payload = {}) {
-		return VKBridge.send("VKWebAppClose", {status, payload})
+		return VKBridge.send("VKWebAppClose", {status, payload}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	static canClose() {
@@ -602,7 +658,9 @@ export default class VkSdk {
 	 * @return {Promise<{result:boolean}>}
 	 */
 	static copyText(text) {
-		return VKBridge.send("VKWebAppCopyText", {text})
+		return VKBridge.send("VKWebAppCopyText", {text}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -632,7 +690,21 @@ export default class VkSdk {
 		if (navigation_bar_color) {
 			params.navigation_bar_color
 		}
-		return VKBridge.send('VKWebAppSetViewSettings', params)
+		return VKBridge.send('VKWebAppSetViewSettings', params).catch(e => {
+			throw castToError(e)
+		})
+	}
+
+	static supportSetViewSettings() {
+		return VKBridge.supports("VKWebAppSetViewSettings")
+	}
+
+	static setViewSettingsIf(statusBarStyle, actionBarColor = undefined, navigation_bar_color = undefined) {
+		if (VkSdk.supportSetViewSettings()) {
+			return VkSdk.setViewSettings(statusBarStyle, actionBarColor, navigation_bar_color)
+		} else {
+			return Promise.resolve()
+		}
 	}
 
 	/**
@@ -643,7 +715,17 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static scroll(top, speed = 100) {
-		return VKBridge.send('VKWebAppScroll', {top, speed})
+		return VKBridge.send('VKWebAppScroll', {top, speed}).catch(e => {
+			throw castToError(e)
+		})
+	}
+
+	/**
+	 *
+	 * @return {boolean}
+	 */
+	static supportScroll() {
+		return VKBridge.supports('VKWebAppScroll')
 	}
 
 	/**
@@ -654,7 +736,9 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static resizeWindow(width, height) {
-		return VKBridge.send('VKWebAppResizeWindow', {width, height})
+		return VKBridge.send('VKWebAppResizeWindow', {width, height}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -665,7 +749,9 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static getPersonalCard(type) {
-		return VKBridge.send('VKWebAppGetPersonalCard', {type})
+		return VKBridge.send('VKWebAppGetPersonalCard', {type}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 
@@ -675,7 +761,9 @@ export default class VkSdk {
 	 * @return {Promise<{users:{id:number,first_name:string,last_name:string}[]}>}
 	 */
 	static getFriends(multi) {
-		return VKBridge.send("VKWebAppGetFriends", {multi})
+		return VKBridge.send("VKWebAppGetFriends", {multi}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -696,7 +784,9 @@ export default class VkSdk {
 	 * @return {Promise<{keys:{key:string,value:string}[]}>}
 	 */
 	static storageGet(keys) {
-		return VKBridge.send("VKWebAppStorageGet", {keys})
+		return VKBridge.send("VKWebAppStorageGet", {keys}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -706,7 +796,9 @@ export default class VkSdk {
 	 * @return {Promise<{result:boolean}>}
 	 */
 	static storageSet(key, value) {
-		return VKBridge.send("VKWebAppStorageSet", {key, value})
+		return VKBridge.send("VKWebAppStorageSet", {key, value}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -715,7 +807,9 @@ export default class VkSdk {
 	 * @param {number} offset
 	 */
 	static storageGetKeys(count = 20, offset = 0) {
-		return VKBridge.send("VKWebAppStorageGetKeys", {count, offset})
+		return VKBridge.send("VKWebAppStorageGetKeys", {count, offset}).catch(e => {
+			throw castToError(e)
+		})
 	}
 
 	/**
@@ -725,5 +819,51 @@ export default class VkSdk {
 	 */
 	static send(method, params) {
 		return VKBridge.send(method, params)
+	}
+
+	/**
+	 * Публикация истории
+	 * @param {object} params
+	 * @return {Promise}
+	 */
+	static showStoryBox(params) {
+		return VKBridge.send('VKWebAppShowStoryBox', params).catch(e => {
+			throw castToError(e)
+		})
+	}
+
+	/**
+	 * @return {boolean}
+	 */
+	static supportShowStoryBox() {
+		return VKBridge.supports('VKWebAppShowStoryBox')
+	}
+
+	static tapticImpactOccurred(params = {"style": "light"}) {
+		return VKBridge.send('VKWebAppTapticImpactOccurred', params).catch(e => {
+			throw castToError(e)
+		})
+	}
+
+	static tapticNotificationOccurred(params = {"type": "success"}) {
+		return VKBridge.send('VKWebAppTapticNotificationOccurred', params).catch(e => {
+			throw castToError(e)
+		})
+	}
+
+	/**
+	 *
+	 * @return {boolean}
+	 */
+	static supportTapticNotificationOccurred() {
+		return VKBridge.supports('VKWebAppTapticNotificationOccurred')
+	}
+
+	/**
+	 *
+	 * @return {boolean}
+	 */
+	static supportTapticImpactOccurred() {
+		return VKBridge.supports('VKWebAppTapticImpactOccurred')
 	}
 }

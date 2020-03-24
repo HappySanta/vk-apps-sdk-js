@@ -13,6 +13,8 @@ import VkSdk from "@happysanta/vk-apps-sdk"
 
 ## Методы
 
+все методы VkSdk за исключением send возвращают ошибку типа VkSdkError, ее можон получить функцией castToError
+
 * [.api()](#api)
 * [.getStartParams()](#getstartparams)
 * [.subscribeEvent()](#subscribeevent)
