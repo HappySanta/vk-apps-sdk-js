@@ -87,7 +87,21 @@ export function castToError(object) {
 	const error = new VkSdkError(JSON.stringify(object) || "SUPER UNKNOWN ERROR BY @happysanta/vk-apps-sdk library")
 	error.origin = object
 	if (object && object.error_data && object.error_data.error_reason) {
-		error.message = `#${object.error_data.error_code} ${object.error_data.error_reason}`
+		if (typeof object.error_data.error_reason === 'string') {
+			error.message = `#${object.error_data.error_code} ${object.error_data.error_reason}`
+		} else if (object.error_data.error_reason.error_msg) {
+			error.message = `API ERROR: #${object.error_data.error_reason.error_code} ${object.error_data.error_reason.error_msg}`
+			error.code = object.error_data.error_reason.error_code
+			error.request_params = object.error_data.error_reason.request_params
+			error.type = VkSdkError.API_ERROR
+			if (Array.isArray(error.request_params)) {
+				error.request_params.forEach(node => {
+					if (node && node.key === "method") {
+						error.message +=' \nmethod: ' + node.value
+					}
+				})
+			}
+		}
 	}
 	if (object && object.error_data && object.error_data.error_code) {
 		error.code = object.error_data.error_code
@@ -453,7 +467,11 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static openPayForm(action, params, appId = null) {
-		return VKBridge.send('VKWebAppOpenPayForm', {app_id: appId || VkSdk.getStartParams().appId, action, params}).catch(e => {
+		return VKBridge.send('VKWebAppOpenPayForm', {
+			app_id: appId || VkSdk.getStartParams().appId,
+			action,
+			params
+		}).catch(e => {
 			throw castToError(e)
 		})
 	}
@@ -597,7 +615,10 @@ export default class VkSdk {
 	 * @return {Promise<{result:boolean}>}
 	 */
 	static sendPayload(payload, groupId = null) {
-		return VKBridge.send("VKWebAppSendPayload", {group_id: groupId || VkSdk.getStartParams().groupId, payload}).catch(e => {
+		return VKBridge.send("VKWebAppSendPayload", {
+			group_id: groupId || VkSdk.getStartParams().groupId,
+			payload
+		}).catch(e => {
 			throw castToError(e)
 		})
 	}
