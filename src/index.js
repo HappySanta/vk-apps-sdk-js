@@ -39,8 +39,8 @@ export function castToVkApi(error) {
 	if (error instanceof Error) return error
 	const data = getVkApiErrorCodeAndMessage(error)
 	if (data) {
-		const [error_code, error_msg, error_text] = data
-		const err = new VkApiError(error_msg)
+		const [error_code, error_msg, error_text, method] = data
+		const err = new VkApiError(error_msg + " \nmethod: " + method)
 		err.code = error_code
 		if (error_text) {
 			err.text = error_text
@@ -64,23 +64,38 @@ export function getVkApiErrorCodeAndMessage(object) {
 	if (error_data === undefined && error_type === undefined) {
 		return null
 	}
-	const {error_code, error_reason, error_msg, error_text} = error_data
+	let method = "unknown"
+	const {error_code, error_reason, error_msg, error_text, request_params} = error_data
+	if (Array.isArray(request_params)) {
+		request_params.forEach(node => {
+			if (node && node.key === "method") {
+				method = node.value
+			}
+		})
+	}
 	if (error_code === undefined && error_reason === undefined) {
 		return null
 	}
 	if (error_code !== undefined && error_msg) {
-		return [error_code, error_msg, error_text]
+		return [error_code, error_msg, error_text, method]
 	}
 	if (typeof error_reason === "object" && error_reason) {
-		const {error_code, error_msg, error_text} = error_reason
+		const {error_code, error_msg, error_text, request_params} = error_reason
+		if (Array.isArray(request_params)) {
+			request_params.forEach(node => {
+				if (node && node.key === "method") {
+					method = node.value
+				}
+			})
+		}
 		if (error_code !== undefined && error_msg) {
-			return [error_code, error_msg, error_text]
+			return [error_code, error_msg, error_text, method]
 		}
 	}
 	return null
 }
 
-export function castToError(object) {
+export function castToError(object, ex = "") {
 	if (object instanceof Error) {
 		return object
 	}
@@ -97,7 +112,7 @@ export function castToError(object) {
 			if (Array.isArray(error.request_params)) {
 				error.request_params.forEach(node => {
 					if (node && node.key === "method") {
-						error.message +=' \nmethod: ' + node.value
+						error.message += ' \nmethod: ' + node.value
 					}
 				})
 			}
@@ -143,6 +158,9 @@ export function castToError(object) {
 				error.message = data.error_description || error.message
 			}
 		}
+	}
+	if (ex) {
+		error.message += " " + ex
 	}
 	return error
 }
@@ -239,7 +257,7 @@ export default class VkSdk {
 	 */
 	static init() {
 		return VKBridge.send("VKWebAppInit", {}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppInit")
 		})
 	}
 
@@ -250,7 +268,7 @@ export default class VkSdk {
 	 */
 	static getUserInfo() {
 		return VKBridge.send('VKWebAppGetUserInfo', {}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppGetUserInfo")
 		})
 	}
 
@@ -262,7 +280,7 @@ export default class VkSdk {
 	 */
 	static getPhoneNumber() {
 		return VKBridge.send('VKWebAppGetPhoneNumber', {}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppGetPhoneNumber")
 		})
 	}
 
@@ -274,7 +292,7 @@ export default class VkSdk {
 	 */
 	static getEmail() {
 		return VKBridge.send('VKWebAppGetEmail', {}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppGetEmail")
 		})
 	}
 
@@ -286,7 +304,7 @@ export default class VkSdk {
 	 */
 	static getGeodata() {
 		return VKBridge.send('VKWebAppGetGeodata', {}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppGetGeodata")
 		})
 	}
 
@@ -297,7 +315,7 @@ export default class VkSdk {
 	 */
 	static openContacts() {
 		return VKBridge.send('VKWebAppOpenContacts', {}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppOpenContacts")
 		})
 	}
 
@@ -328,15 +346,22 @@ export default class VkSdk {
 	 * полученный с помощью VKWebAppGetAuthToken {@see getAuthToken}
 	 * @param {string} method - название метода API. {@url https://vk.com/dev/methods}
 	 * @param {Object} params - параметры метода в виде JSON
+	 * @param {boolean} cast - обработаывать ошибку
 	 * @returns {Promise}
 	 */
-	static callAPIMethod(method, params = {}) {
+	static callAPIMethod(method, params = {}, cast = true) {
 		if (params.v === undefined) {
 			params.v = VkSdk.defaultApiVersion
 		}
-		return VKBridge.send('VKWebAppCallAPIMethod', {method, params}).catch(e => {
-			throw castToError(e)
-		})
+		const p = VKBridge.send('VKWebAppCallAPIMethod', {method, params})
+		if (cast) {
+			return p.catch(e => {
+				throw castToError(e)
+			})
+		} else {
+			return p
+		}
+
 	}
 
 	/**
@@ -381,11 +406,12 @@ export default class VkSdk {
 			p.access_token = VkSdk.tokenCache[scope]
 		}
 
-		return VkSdk.callAPIMethod(method, p)
+		return VkSdk.callAPIMethod(method, p, false)
 			.catch(e => {
 				if (!isVkApiError(e)) {
 					const e = castToError(e)
 					e.retry = retry
+					e.message = "API: " + method + ': ' + e.message
 					throw e
 				}
 				const vkError = castToVkApi(e)
@@ -415,7 +441,7 @@ export default class VkSdk {
 	 */
 	static share(link = undefined) {
 		return VKBridge.send('VKWebAppShare', {link}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppShare")
 		})
 	}
 
@@ -427,7 +453,7 @@ export default class VkSdk {
 	 */
 	static showWallPostBox(params = {}) {
 		return VKBridge.send('VKWebAppShowWallPostBox', params).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppShowWallPostBox")
 		})
 	}
 
@@ -439,7 +465,7 @@ export default class VkSdk {
 	 */
 	static showImages(images, start_index = 0) {
 		return VKBridge.send("VKWebAppShowImages", {images, start_index}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppShowImages")
 		})
 	}
 
@@ -454,7 +480,7 @@ export default class VkSdk {
 	 */
 	static getClientVersion() {
 		return VKBridge.send('VKWebAppGetClientVersion', {}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppGetClientVersion")
 		})
 	}
 
@@ -472,7 +498,7 @@ export default class VkSdk {
 			action,
 			params
 		}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, 'VKWebAppOpenPayForm')
 		})
 	}
 
@@ -483,7 +509,7 @@ export default class VkSdk {
 	 */
 	static allowNotifications() {
 		return VKBridge.send("VKWebAppAllowNotifications", {}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppAllowNotifications")
 		})
 	}
 
@@ -494,7 +520,7 @@ export default class VkSdk {
 	 */
 	static denyNotifications() {
 		return VKBridge.send('VKWebAppDenyNotifications', {}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppDenyNotifications")
 		})
 	}
 
@@ -505,7 +531,7 @@ export default class VkSdk {
 	 */
 	static addToFavorites() {
 		return VKBridge.send("VKWebAppAddToFavorites", {}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppAddToFavorites")
 		})
 	}
 
@@ -516,7 +542,7 @@ export default class VkSdk {
 	 */
 	static openCodeReader() {
 		return VKBridge.send("VKWebAppOpenCodeReader", {}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppOpenCodeReader")
 		})
 	}
 
@@ -532,7 +558,7 @@ export default class VkSdk {
 	 */
 	static openQR() {
 		return VKBridge.send('VKWebAppOpenQR', {}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppOpenQR")
 		})
 	}
 
@@ -543,7 +569,7 @@ export default class VkSdk {
 	 */
 	static setLocation(location) {
 		return VKBridge.send('VKWebAppSetLocation', {location}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppSetLocation")
 		})
 	}
 
@@ -557,7 +583,7 @@ export default class VkSdk {
 	 */
 	static allowMessagesFromGroup(groupId, key) {
 		return VKBridge.send('VKWebAppAllowMessagesFromGroup', {group_id: groupId, key}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppAllowMessagesFromGroup")
 		})
 	}
 
@@ -573,7 +599,7 @@ export default class VkSdk {
 			app_id: appId || VkSdk.getStartParams().appId,
 			group_id: groupId || VkSdk.getStartParams().groupId
 		}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, 'VKWebAppGetCommunityAuthToken')
 		})
 	}
 
@@ -586,7 +612,7 @@ export default class VkSdk {
 	 */
 	static addToCommunity() {
 		return VKBridge.send("VKWebAppAddToCommunity", {}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppAddToCommunity")
 		})
 	}
 
@@ -603,7 +629,7 @@ export default class VkSdk {
 		return VKBridge.send("VKWebAppShowCommunityWidgetPreviewBox", {
 			type, code, group_id: groupId || VkSdk.getStartParams().groupId
 		}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, 'VKWebAppShowCommunityWidgetPreviewBox')
 		})
 	}
 
@@ -619,7 +645,7 @@ export default class VkSdk {
 			group_id: groupId || VkSdk.getStartParams().groupId,
 			payload
 		}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, 'VKWebAppSendPayload')
 		})
 	}
 
@@ -631,7 +657,7 @@ export default class VkSdk {
 	 */
 	static joinGroup(groupId) {
 		return VKBridge.send('VKWebAppJoinGroup', {group_id: groupId}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppJoinGroup")
 		})
 	}
 
@@ -643,7 +669,7 @@ export default class VkSdk {
 	 */
 	static openApp(appId, location = '') {
 		return VKBridge.send('VKWebAppOpenApp', {app_id: appId, location}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppOpenApp")
 		})
 	}
 
@@ -652,7 +678,7 @@ export default class VkSdk {
 	 */
 	static canOpenApp() {
 		return VKBridge.supports('VKWebAppOpenApp').catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppOpenApp")
 		})
 	}
 
@@ -665,7 +691,7 @@ export default class VkSdk {
 	 */
 	static close(status = "success", payload = {}) {
 		return VKBridge.send("VKWebAppClose", {status, payload}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppClose")
 		})
 	}
 
@@ -680,7 +706,7 @@ export default class VkSdk {
 	 */
 	static copyText(text) {
 		return VKBridge.send("VKWebAppCopyText", {text}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppCopyText")
 		})
 	}
 
@@ -712,7 +738,7 @@ export default class VkSdk {
 			params.navigation_bar_color
 		}
 		return VKBridge.send('VKWebAppSetViewSettings', params).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppSetViewSettings")
 		})
 	}
 
@@ -737,7 +763,7 @@ export default class VkSdk {
 	 */
 	static scroll(top, speed = 100) {
 		return VKBridge.send('VKWebAppScroll', {top, speed}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppScroll")
 		})
 	}
 
@@ -758,7 +784,7 @@ export default class VkSdk {
 	 */
 	static resizeWindow(width, height) {
 		return VKBridge.send('VKWebAppResizeWindow', {width, height}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppResizeWindow")
 		})
 	}
 
@@ -771,7 +797,7 @@ export default class VkSdk {
 	 */
 	static getPersonalCard(type) {
 		return VKBridge.send('VKWebAppGetPersonalCard', {type}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppGetPersonalCard")
 		})
 	}
 
@@ -783,7 +809,7 @@ export default class VkSdk {
 	 */
 	static getFriends(multi) {
 		return VKBridge.send("VKWebAppGetFriends", {multi}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppGetFriends")
 		})
 	}
 
@@ -806,7 +832,7 @@ export default class VkSdk {
 	 */
 	static storageGet(keys) {
 		return VKBridge.send("VKWebAppStorageGet", {keys}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppStorageGet")
 		})
 	}
 
@@ -818,7 +844,7 @@ export default class VkSdk {
 	 */
 	static storageSet(key, value) {
 		return VKBridge.send("VKWebAppStorageSet", {key, value}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppStorageSet")
 		})
 	}
 
@@ -829,7 +855,7 @@ export default class VkSdk {
 	 */
 	static storageGetKeys(count = 20, offset = 0) {
 		return VKBridge.send("VKWebAppStorageGetKeys", {count, offset}).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppStorageGetKeys")
 		})
 	}
 
@@ -849,7 +875,7 @@ export default class VkSdk {
 	 */
 	static showStoryBox(params) {
 		return VKBridge.send('VKWebAppShowStoryBox', params).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppShowStoryBox")
 		})
 	}
 
@@ -862,13 +888,13 @@ export default class VkSdk {
 
 	static tapticImpactOccurred(params = {"style": "light"}) {
 		return VKBridge.send('VKWebAppTapticImpactOccurred', params).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppTapticImpactOccurred")
 		})
 	}
 
 	static tapticNotificationOccurred(params = {"type": "success"}) {
 		return VKBridge.send('VKWebAppTapticNotificationOccurred', params).catch(e => {
-			throw castToError(e)
+			throw castToError(e, "VKWebAppTapticNotificationOccurred")
 		})
 	}
 
