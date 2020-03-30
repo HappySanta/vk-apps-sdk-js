@@ -138,6 +138,11 @@ export function castToError(object, ex = "") {
 		error.type = VkSdkError.ACCESS_ERROR
 	}
 
+	//Пользователь что-то запретил (такое приходи когда на вебе отказаться от публикации записи на стене)
+	if (error.message.indexOf('Operation denied by user') !==-1) {
+		error.type = VkSdkError.ACCESS_ERROR
+	}
+
 	// Кастуем ситацию запроса токена и отстуствия интернета на андроид
 	if (object && object.error_type && object.error_type === 'auth_error') {
 		if (object && object.error_data) {
