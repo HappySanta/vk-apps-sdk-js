@@ -55,6 +55,16 @@ function normalize(str) {
 }
 
 export function isEqualScope(left, right) {
+	/*
+	 * Возможно иногда не приходять scope с каких-то клиентов
+	 * в этом случае надеемся что они выданы
+	 */
+	if (typeof right !== 'string') {
+		return true
+	}
+	if (typeof left !== 'string') {
+		return true
+	}
 	return normalize(left) === normalize(right)
 }
 
