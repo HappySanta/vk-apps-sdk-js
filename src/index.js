@@ -6,6 +6,26 @@ import VkConnectRequest from "./VkConnectRequest"
 
 export const VkConnectRequestClass = VkConnectRequest
 
+/**
+ * @param {object} object
+ * @param {string[]|number[]|string} path
+ * @return {Object|string|number|any|null}
+ */
+export function getObjectPath(object, path) {
+	if (typeof path === 'string') {
+		path = path.toString().split('.')
+	}
+	return path.reduce((buffer, x) => {
+		if (buffer && buffer.hasOwnProperty(x)) {
+			return buffer[x]
+		} else {
+			return null
+		}
+	}, object)
+}
+
+const gp = getObjectPath
+
 export class VkSdkError extends Error {
 
 	static UNKNOWN_TYPE = 'UNKNOWN_TYPE'
@@ -13,6 +33,7 @@ export class VkSdkError extends Error {
 	static API_ERROR = 'api_error'
 	static NETWORK_ERROR = 'network_error'
 	static ACCESS_ERROR = 'access_error'
+	static USER_REJECT = 'access_error'
 
 	constructor(message) {
 		super(message)
@@ -40,7 +61,7 @@ export function castToVkApi(error) {
 	const data = getVkApiErrorCodeAndMessage(error)
 	if (data) {
 		const [error_code, error_msg, error_text, method] = data
-		const err = new VkApiError(error_msg + " \nmethod: " + method)
+		const err = new VkApiError(error_msg + " \nmethod: " + method + "\ncode:" + error_code)
 		err.code = error_code
 		if (error_text) {
 			err.text = error_text
@@ -109,11 +130,17 @@ export function castToError(object, ex = "") {
 	if (object instanceof Error) {
 		return object
 	}
-	const error = new VkSdkError(JSON.stringify(object) || "SUPER UNKNOWN ERROR BY @happysanta/vk-apps-sdk library")
+	const objectType = (typeof object)
+	const objectIsNull = (object === null)
+	const error = new VkSdkError(JSON.stringify(object) || `Receive unknown error message from vk-bridge: ${object}\n type: ${objectType} isNull: ${objectIsNull ? 'yes' : 'no'} see @happysanta/vk-apps-sdk`)
 	error.origin = object
-	if (object && object.error_data && object.error_data.error_reason) {
-		if (typeof object.error_data.error_reason === 'string') {
+
+	error.type = gp(object, 'error_type') || error.type
+
+	if (gp(object, 'error_data.error_reason')) {
+		if (typeof gp(object, 'error_data.error_reason') === 'string') {
 			error.message = `#${object.error_data.error_code} ${object.error_data.error_reason}`
+			error.code = gp(object, 'error_data.error_code') || error.code
 		} else if (object.error_data.error_reason.error_msg) {
 			error.message = `API ERROR: #${object.error_data.error_reason.error_code} ${object.error_data.error_reason.error_msg}`
 			error.code = object.error_data.error_reason.error_code
@@ -128,8 +155,8 @@ export function castToError(object, ex = "") {
 			}
 		}
 	}
-	if (object && object.error_data && object.error_data.error_code) {
-		error.code = object.error_data.error_code
+	if (gp(object, 'error_data.error_code')) {
+		error.code = gp(object, 'error_data.error_code')
 	}
 	if (object && object.error_type) {
 		error.type = object.error_type
@@ -137,6 +164,11 @@ export function castToError(object, ex = "") {
 		if (error.type === 'auth_error') {
 			error.type = VkSdkError.CLIENT_ERROR
 		}
+	}
+
+	//iOS ошибка сети во время вызова GetAuthToken
+	if (gp(object, "error_type") === 'auth_error' && gp(object, 'error_data.error_code') === 0) {
+		error.type = VkSdkError.NETWORK_ERROR
 	}
 
 	//На iOS такой набор ошибок в случае пропажи интернета во время вызова метода апи
@@ -148,8 +180,10 @@ export function castToError(object, ex = "") {
 		error.type = VkSdkError.ACCESS_ERROR
 	}
 
+
+
 	//Пользователь что-то запретил (такое приходи когда на вебе отказаться от публикации записи на стене)
-	if (error.message.indexOf('Operation denied by user') !==-1) {
+	if (error.message.indexOf('Operation denied by user') !== -1) {
 		error.type = VkSdkError.ACCESS_ERROR
 	}
 
@@ -159,6 +193,7 @@ export function castToError(object, ex = "") {
 			const data = object.error_data
 			if (data.error_reason === "" && data.error === "") {
 				error.type = VkSdkError.NETWORK_ERROR
+				error.message = "Network error"
 			}
 		}
 	}
@@ -177,6 +212,7 @@ export function castToError(object, ex = "") {
 	if (ex) {
 		error.message += " " + ex
 	}
+	error.message += " type:"+error.type + " code:"+error.code
 	return error
 }
 
@@ -348,9 +384,7 @@ export default class VkSdk {
 		}
 		return VKBridge.send('VKWebAppGetAuthToken', params)
 			.catch(e => {
-				e = castToError(e)
-				e.message = "VKWebAppGetAuthToken error " + JSON.stringify(params) + ": " + e.message
-				throw e
+				throw castToError(e,"VKWebAppGetAuthToken " + scope)
 			})
 	}
 
@@ -365,6 +399,7 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static callAPIMethod(method, params = {}, cast = true) {
+		VkSdk.log("VKWebAppCallAPIMethod: " + method)
 		if (params.v === undefined) {
 			params.v = VkSdk.defaultApiVersion
 		}
@@ -393,6 +428,7 @@ export default class VkSdk {
 		const passedTokenInParams = !!params.access_token
 		const p = {...params}
 		if (!VkSdk.tokenCache[scope] && !p.access_token) {
+			VkSdk.log("[" + method + "] Fetch token with scope:" + scope)
 			return VkSdk.getAuthToken(scope)
 				.then(({access_token, scope: scopeFact}) => {
 					if (!isEqualScope(scope, scopeFact)) {
@@ -408,10 +444,20 @@ export default class VkSdk {
 						throw error
 					}
 					VkSdk.tokenCache[scope] = access_token
+					VkSdk.log("[" + method + "] Token fetched: " + access_token.substr(0, 5) + '...')
 					return VkSdk.api(method, params, scope, retry - 1)
 				})
 				.catch(e => {
-					const err = isVkApiError(e) ? castToVkApi(e) : castToError(e)
+					const err = isVkApiError(e) ? castToVkApi(e) : castToError(e, "getAuthToken")
+					/*
+					 * Во время получаения токена может возникнуть сетевая ошибка,
+					 * в этом случае повторим запрос
+					 */
+					if (retry > 0 && err.type === VkSdkError.NETWORK_ERROR) {
+						VkSdk.log("[" + method + "] Network error then fetch token, retry: " + retry)
+						return VkSdk.api(method, params, scope, retry - 1)
+					}
+
 					err.retry = retry
 					throw e
 				})
@@ -424,9 +470,8 @@ export default class VkSdk {
 		return VkSdk.callAPIMethod(method, p, false)
 			.catch(e => {
 				if (!isVkApiError(e)) {
-					const e = castToError(e)
-					e.retry = retry
-					e.message = "API: " + method + ': ' + e.message
+					const err = castToError(e, "API: " + method + ':')
+					err.retry = retry
 					throw e
 				}
 				const vkError = castToVkApi(e)
@@ -439,9 +484,11 @@ export default class VkSdk {
 						throw vkError
 					}
 					delete VkSdk.tokenCache[scope]
+					VkSdk.log("[" + method + "] Retry api call ip changed: " + vkError.code + ": " + vkError.message)
 					return VkSdk.api(method, params, scope, retry - 1)
 				}
 				if (SOFT_ERROR_CODES.indexOf(vkError.code) !== -1) {
+					VkSdk.log("[" + method + "] Retry api call soft error code: " + vkError.code + ": " + vkError.message)
 					return delay(300)
 						.then(() => VkSdk.api(method, params, scope, retry - 1))
 				}
@@ -927,5 +974,18 @@ export default class VkSdk {
 	 */
 	static supportTapticImpactOccurred() {
 		return VKBridge.supports('VKWebAppTapticImpactOccurred')
+	}
+
+	/**
+	 * @param {function(string)} callback
+	 */
+	static addLogCallback(callback) {
+		VkSdk.logCallback = callback
+	}
+
+	static log(message) {
+		if (VkSdk.logCallback) {
+			VkSdk.logCallback(message)
+		}
 	}
 }
