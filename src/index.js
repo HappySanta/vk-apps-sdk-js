@@ -472,7 +472,7 @@ export default class VkSdk {
 				if (!isVkApiError(e)) {
 					const err = castToError(e, "API: " + method + ':')
 					err.retry = retry
-					throw e
+					throw err
 				}
 				const vkError = castToVkApi(e)
 				vkError.retry = retry
