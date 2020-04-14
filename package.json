@@ -1,6 +1,6 @@
 {
 	"name": "@happysanta/vk-apps-sdk",
-	"version": "3.0.7",
+	"version": "3.0.8",
 	"description": "Обёртка над @vkontakte/vk-bridge",
 	"main": "index.js",
 	"jsnext:main": "src/index.js",
@@ -25,7 +25,6 @@
 	},
 	"homepage": "https://github.com/HappySanta/vk-apps-sdk-js#readme",
 	"dependencies": {
-		"@vkontakte/vk-bridge": "^2.1.6",
 		"query-string": "^6.4.0"
 	},
 	"peerDependencies": {
