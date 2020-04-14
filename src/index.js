@@ -472,6 +472,11 @@ export default class VkSdk {
 				if (!isVkApiError(e)) {
 					const err = castToError(e, "API: " + method + ':')
 					err.retry = retry
+					if (err.type === VkSdkError.NETWORK_ERROR) {
+						if (retry > 0) {
+							return VkSdk.api(method, params, scope, retry - 1)
+						}
+					}
 					throw err
 				}
 				const vkError = castToVkApi(e)
