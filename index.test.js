@@ -59,6 +59,14 @@ const errors = [
 		match: {
 			type: VkSdkError.NETWORK_ERROR,
 		}
+	},
+	{
+		platform: 'mobile_iphone',
+		name: "VKWebAppGetAuthToken с косячным токеном",
+		raw: {"error_type":"auth_error","error_data":{"error":"invalid_token","error_description":"token is incorrect"}},
+		match: {
+			type: VkSdkError.CLIENT_ERROR,
+		}
 	}
 ]
 errors.forEach(({platform, name, raw, match}) => {

@@ -3,7 +3,9 @@ import VkStartParamsBuilder from "./VkStartParamsBuilder"
 import VkConnectObserver from "./VkConnectObserver"
 import VKBridge from "@vkontakte/vk-bridge"
 import VkConnectRequest from "./VkConnectRequest"
+import {Queue} from "./Queue"
 
+export const QueueClass = Queue
 export const VkConnectRequestClass = VkConnectRequest
 
 /**
@@ -181,7 +183,6 @@ export function castToError(object, ex = "") {
 	}
 
 
-
 	//Пользователь что-то запретил (такое приходи когда на вебе отказаться от публикации записи на стене)
 	if (error.message.indexOf('Operation denied by user') !== -1) {
 		error.type = VkSdkError.ACCESS_ERROR
@@ -212,7 +213,7 @@ export function castToError(object, ex = "") {
 	if (ex) {
 		error.message += " " + ex
 	}
-	error.message += " type:"+error.type + " code:"+error.code
+	error.message += " type:" + error.type + " code:" + error.code
 	return error
 }
 
@@ -234,6 +235,8 @@ export const SOFT_ERROR_CODES = [
 export function delay(time) {
 	return new Promise(resolve => setTimeout(resolve, time))
 }
+
+const queueForRequestToken = new Queue()
 
 export default class VkSdk {
 
@@ -379,13 +382,17 @@ export default class VkSdk {
 	 * @returns {Promise}
 	 */
 	static getAuthToken(scope = '', appId = null) {
+		/*
+		На iOS замечен баг: не надо вызывать этот метод дважды надо подождать пока предыдуий звершится
+		 */
 		const params = {
-			app_id: appId || this.getStartParams().appId, scope
+			app_id: appId || this.getStartParams().appId,
+			scope: scope
 		}
-		return VKBridge.send('VKWebAppGetAuthToken', params)
+		return queueForRequestToken.call(() => VKBridge.send('VKWebAppGetAuthToken', params)
 			.catch(e => {
-				throw castToError(e,"VKWebAppGetAuthToken " + scope)
-			})
+				throw castToError(e, "VKWebAppGetAuthToken " + scope)
+			}))
 	}
 
 	/**
@@ -429,38 +436,10 @@ export default class VkSdk {
 		const p = {...params}
 		if (!VkSdk.tokenCache[scope] && !p.access_token) {
 			VkSdk.log("[" + method + "] Fetch token with scope:" + scope)
-			return VkSdk.getAuthToken(scope)
-				.then(({access_token, scope: scopeFact}) => {
-					if (!isEqualScope(scope, scopeFact)) {
-						const error = new VkSdkError("LESS_SCOPE_THAN_REQUEST")
-						error.retry = retry
-						error.type = VkSdkError.ACCESS_ERROR
-						throw error
-					}
-					if (!access_token) {
-						const error = new VkSdkError("ACCESS_TOKEN_NOT_RETURNED_FROM_VK")
-						error.retry = retry
-						error.type = VkSdkError.ACCESS_ERROR
-						throw error
-					}
-					VkSdk.tokenCache[scope] = access_token
-					VkSdk.log("[" + method + "] Token fetched: " + access_token.substr(0, 5) + '...')
-					return VkSdk.api(method, params, scope, retry - 1)
-				})
-				.catch(e => {
-					const err = isVkApiError(e) ? castToVkApi(e) : castToError(e, "getAuthToken")
-					/*
-					 * Во время получаения токена может возникнуть сетевая ошибка,
-					 * в этом случае повторим запрос
-					 */
-					if (retry > 0 && err.type === VkSdkError.NETWORK_ERROR) {
-						VkSdk.log("[" + method + "] Network error then fetch token, retry: " + retry)
-						return VkSdk.api(method, params, scope, retry - 1)
-					}
-
-					err.retry = retry
-					throw e
-				})
+			return getTokenWithScope(scope).then(access_token => {
+				VkSdk.log("[" + method + "] Token fetched: " + access_token.substr(0, 5) + '...')
+				return VkSdk.api(method, params, scope, retry - 1)
+			})
 		}
 
 		if (!p.access_token) {
@@ -993,4 +972,43 @@ export default class VkSdk {
 			VkSdk.logCallback(message)
 		}
 	}
+}
+
+
+const getTokenQueue = new Queue()
+
+async function getTokenWithScope(scope) {
+	return await getTokenQueue.call(async () => {
+		if (VkSdk.tokenCache[scope]) {
+			return VkSdk.tokenCache[scope]
+		}
+		let retry = 0
+		let lastError = new VkSdkError("CANT_FETCH_TOKEN_MANY_TIMER")
+		while (retry < 5) {
+			try {
+				VkSdk.tokenCache[scope] = await VkSdk.getAuthToken(scope)
+					.then(({access_token, scope: scopeFact}) => {
+						if (!isEqualScope(scope, scopeFact)) {
+							const error = new VkSdkError("LESS_SCOPE_THAN_REQUEST")
+							error.type = VkSdkError.ACCESS_ERROR
+							throw error
+						}
+						if (!access_token) {
+							const error = new VkSdkError("ACCESS_TOKEN_NOT_RETURNED_FROM_VK")
+							error.type = VkSdkError.ACCESS_ERROR
+							throw error
+						}
+						return access_token
+					})
+				return VkSdk.tokenCache[scope]
+			} catch (e) {
+				lastError = e
+				if (e.type !== VkSdkError.NETWORK_ERROR) {
+					throw e
+				}
+			}
+			retry++
+		}
+		throw lastError
+	})
 }
