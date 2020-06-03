@@ -67,6 +67,22 @@ const errors = [
 		match: {
 			type: VkSdkError.CLIENT_ERROR,
 		}
+	},
+	{
+		platform: 'desktop_web',
+		name: "VKWebAppOpenPayForm пользователь закрыл окно оплаты",
+		raw: {"error_type":"client_error","error_data":{"error_code":1,"error_reason":{"type":"transaction","action":"pay-to-group","status":false,"transaction_id":null,"amount":null,"extra":null,"error_msg":"VK Pay payment failed"}}},
+		match: {
+			type: VkSdkError.USER_REJECT,
+		}
+	},
+	{
+		platform: 'mobile_iphone',
+		name: "VKWebAppOpenPayForm пользователь закрыл окно оплаты",
+		raw: {"request_id":2,"error_type":"client_error","error_data":{"error_code":4,"error_reason":"User denied"}},
+		match: {
+			type: VkSdkError.USER_REJECT,
+		}
 	}
 ]
 errors.forEach(({platform, name, raw, match}) => {

@@ -188,6 +188,17 @@ export function castToError(object, ex = "") {
 		error.type = VkSdkError.ACCESS_ERROR
 	}
 
+	//VKWebAppOpenPayForm пользователь закрыл окно оплаты на вебе
+	if (gp(object, "error_type") === "client_error") {
+		if (gp(object, "error_data.error_code") === 1) {
+			if (gp(object, "error_data.error_reason.type") === "transaction") {
+				if (gp(object, "error_data.error_reason.error_msg") === "VK Pay payment failed") {
+					error.type = VkSdkError.ACCESS_ERROR
+				}
+			}
+		}
+	}
+
 	// Кастуем ситацию запроса токена и отстуствия интернета на андроид
 	if (object && object.error_type && object.error_type === 'auth_error') {
 		if (object && object.error_data) {

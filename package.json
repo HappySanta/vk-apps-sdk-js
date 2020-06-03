@@ -1,6 +1,6 @@
 {
 	"name": "@happysanta/vk-apps-sdk",
-	"version": "3.0.11",
+	"version": "3.0.12",
 	"description": "Обёртка над @vkontakte/vk-bridge",
 	"main": "index.js",
 	"jsnext:main": "src/index.js",
@@ -8,7 +8,7 @@
 		"compile": "babel src --out-dir lib --presets=@babel/env --plugins=@babel/proposal-class-properties",
 		"prepublish": "npm run compile",
 		"pub": "npm publish --access public",
-		"test": "jest"
+		"test": "npm run compile && jest"
 	},
 	"repository": {
 		"type": "git",
@@ -25,6 +25,7 @@
 	},
 	"homepage": "https://github.com/HappySanta/vk-apps-sdk-js#readme",
 	"dependencies": {
+		"@vkontakte/vk-bridge": "^2.2.2",
 		"query-string": "^6.4.0"
 	},
 	"peerDependencies": {
@@ -35,9 +36,18 @@
 		"@babel/core": "^7.8.4",
 		"@babel/plugin-proposal-class-properties": "^7.8.3",
 		"@babel/preset-env": "^7.8.4",
+		"babel-polyfill": "^6.26.0",
+		"enzyme": "^3.11.0",
+		"enzyme-adapter-react-16": "^1.15.2",
 		"jest": "^25.3.0"
 	},
 	"directories": {
 		"lib": "lib"
+	},
+	"jest": {
+		"verbose": true,
+		"setupFiles": [
+			"<rootDir>/jest.init.js"
+		]
 	}
 }
