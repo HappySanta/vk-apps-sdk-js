@@ -1005,6 +1005,9 @@ async function getTokenWithScope(scope) {
 							throw error
 						}
 						if (!access_token) {
+							// Событие пришло что токен выдан, но по факту его нет
+							// такое может быть есть vk-bridge сломался
+							// можно попробовать повторить запрос
 							const error = new VkSdkError("ACCESS_TOKEN_NOT_RETURNED_FROM_VK")
 							error.type = VkSdkError.ACCESS_ERROR
 							throw error
@@ -1014,7 +1017,7 @@ async function getTokenWithScope(scope) {
 				return VkSdk.tokenCache[scope]
 			} catch (e) {
 				lastError = e
-				if (e.type !== VkSdkError.NETWORK_ERROR) {
+				if (e.type !== VkSdkError.NETWORK_ERROR && e.message !== 'ACCESS_TOKEN_NOT_RETURNED_FROM_VK') {
 					throw e
 				}
 			}

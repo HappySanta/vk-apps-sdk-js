@@ -55,7 +55,14 @@ const errors = [
 	{
 		platform: "mobile_iphone",
 		name: "Обрыв соединения во время VKWebAppGetAuthToken",
-		raw: {"error_type":"auth_error","error_data":{"error_code":53,"error_domain":"NSPOSIXErrorDomain","error_description":"Не удалось завершить операцию. Программа вызвала разрыв подключения"}},
+		raw: {
+			"error_type": "auth_error",
+			"error_data": {
+				"error_code": 53,
+				"error_domain": "NSPOSIXErrorDomain",
+				"error_description": "Не удалось завершить операцию. Программа вызвала разрыв подключения"
+			}
+		},
 		match: {
 			type: VkSdkError.NETWORK_ERROR,
 		}
@@ -63,7 +70,10 @@ const errors = [
 	{
 		platform: 'mobile_iphone',
 		name: "VKWebAppGetAuthToken с косячным токеном",
-		raw: {"error_type":"auth_error","error_data":{"error":"invalid_token","error_description":"token is incorrect"}},
+		raw: {
+			"error_type": "auth_error",
+			"error_data": {"error": "invalid_token", "error_description": "token is incorrect"}
+		},
 		match: {
 			type: VkSdkError.CLIENT_ERROR,
 		}
@@ -71,7 +81,21 @@ const errors = [
 	{
 		platform: 'desktop_web',
 		name: "VKWebAppOpenPayForm пользователь закрыл окно оплаты",
-		raw: {"error_type":"client_error","error_data":{"error_code":1,"error_reason":{"type":"transaction","action":"pay-to-group","status":false,"transaction_id":null,"amount":null,"extra":null,"error_msg":"VK Pay payment failed"}}},
+		raw: {
+			"error_type": "client_error",
+			"error_data": {
+				"error_code": 1,
+				"error_reason": {
+					"type": "transaction",
+					"action": "pay-to-group",
+					"status": false,
+					"transaction_id": null,
+					"amount": null,
+					"extra": null,
+					"error_msg": "VK Pay payment failed"
+				}
+			}
+		},
 		match: {
 			type: VkSdkError.USER_REJECT,
 		}
@@ -79,7 +103,11 @@ const errors = [
 	{
 		platform: 'mobile_iphone',
 		name: "VKWebAppOpenPayForm пользователь закрыл окно оплаты",
-		raw: {"request_id":2,"error_type":"client_error","error_data":{"error_code":4,"error_reason":"User denied"}},
+		raw: {
+			"request_id": 2,
+			"error_type": "client_error",
+			"error_data": {"error_code": 4, "error_reason": "User denied"}
+		},
 		match: {
 			type: VkSdkError.USER_REJECT,
 		}
