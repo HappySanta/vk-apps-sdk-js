@@ -212,8 +212,8 @@ export function castToError(object, ex = '') {
     }
   }
 
-  // Обработка ситации запроса токена и отстуствия интернета на iOS https://vk.com/bug204658
-  if (object && object.error_type && object.error_type === 'auth_error') {
+  // Обработка ситуации запроса токена и отсутствия интернета на iOS https://vk.com/bug204658
+  if (object && object.error_type && (object.error_type === 'auth_error' || object.error_type === 'api_error')) {
     if (object && object.error_data) {
       const data = object.error_data;
       // Коды ошибок подсмотрели тут https://github.com/apple/swift/blob/3a75394c670bb7143397327ac7bf5b5fe8d50588/stdlib/public/SDK/Foundation/NSError.swift#L642

@@ -133,6 +133,33 @@ const errors = [
       code: 5,
     },
   },
+  {
+    platform: 'mobile_iphone',
+    name: 'VKWebAppCallAPIMethod таймаут 1',
+    raw: { 'error_type': 'api_error', 'error_data': { 'error_code': -1001, 'error_domain': 'NSURLErrorDomain', 'error_description': 'Превышен лимит времени на запрос.' } },
+    match: {
+      type: VkSdkError.NETWORK_ERROR,
+      code: -1001
+    }
+  },
+  {
+    platform: 'mobile_iphone',
+    name: 'VKWebAppCallAPIMethod таймаут 2',
+    raw: {"error_type":"api_error","error_data":{"error_code":-1005,"error_domain":"NSURLErrorDomain","error_description":"Сетевое соединение потеряно."}},
+    match: {
+      type: VkSdkError.NETWORK_ERROR,
+      code: -1005
+    }
+  },
+  {
+    platform: 'mobile_iphone',
+    name: 'VKWebAppCallAPIMethod таймаут 3',
+    raw: {"error_type":"api_error","error_data":{"error_code":-1001,"error_domain":"NSURLErrorDomain","error_description":"The request timed out."}},
+    match: {
+      type: VkSdkError.NETWORK_ERROR,
+      code: -1001
+    }
+  },
 ];
 errors.forEach(({ platform, name, raw, match }) => {
   test(`[${platform}] ${name}`, () => {
@@ -158,24 +185,24 @@ function between(x, min, max) {
 }
 
 test('ExponentialBackoff', async (done) => {
-  const startDelay = 100
+  const startDelay = 100;
   const bo = new ExponentialBackoffClass(startDelay);
   const t0 = Date.now();
   await bo.wait();
   const t1 = Date.now();
-  expect(t1).toBeGreaterThanOrEqual(t0 + (startDelay * Math.pow(Math.E/2, 0)));
+  expect(t1).toBeGreaterThanOrEqual(t0 + (startDelay * Math.pow(Math.E / 2, 0)));
   await bo.wait();
   const t2 = Date.now();
-  expect(t2).toBeGreaterThanOrEqual(t1 + (startDelay * Math.pow(Math.E/2, 1)));
+  expect(t2).toBeGreaterThanOrEqual(t1 + (startDelay * Math.pow(Math.E / 2, 1)));
   await bo.wait();
   const t3 = Date.now();
-  expect(t3).toBeGreaterThanOrEqual(t2 + (startDelay * Math.pow(Math.E/2, 2)));
+  expect(t3).toBeGreaterThanOrEqual(t2 + (startDelay * Math.pow(Math.E / 2, 2)));
   await bo.wait();
   const t4 = Date.now();
-  expect(t4).toBeGreaterThanOrEqual(t3 + (startDelay * Math.pow(Math.E/2, 3)));
+  expect(t4).toBeGreaterThanOrEqual(t3 + (startDelay * Math.pow(Math.E / 2, 3)));
   await bo.wait();
   const t5 = Date.now();
-  expect(t5).toBeGreaterThanOrEqual(t4 + (startDelay * Math.pow(Math.E/2, 4)));
+  expect(t5).toBeGreaterThanOrEqual(t4 + (startDelay * Math.pow(Math.E / 2, 4)));
   expect(bo.canRetry()).toBeFalsy();
   done();
 }, 10000);

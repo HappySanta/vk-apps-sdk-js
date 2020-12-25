@@ -1,6 +1,6 @@
 {
 	"name": "@happysanta/vk-apps-sdk",
-	"version": "3.0.15",
+	"version": "3.0.16",
 	"description": "Обёртка над @vkontakte/vk-bridge",
 	"main": "index.js",
 	"jsnext:main": "src/index.js",
