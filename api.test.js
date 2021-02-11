@@ -1,7 +1,7 @@
 /**
  * @jest-environment ./android-test-env.js
  */
-const { castToError, VkSdkError, ExponentialBackoffClass } = require('./index');
+const { castToError, VkSdkError, ExponentialBackoffClass, VkStartParamsBuilderClass, QS } = require('./index');
 const VkSdk = require('./index').default;
 
 test('test-env-works', () => {
@@ -65,4 +65,19 @@ test("ideal case", async (done) => {
   const {response: [{id}]} = await VkSdk.api("users.get", {}, 'friends', 3)
   expect(id).toBe(100)
   done()
+})
+
+test("parse start arguments with experiment", () => {
+  const test = "?vk_access_token_settings=&vk_app_id=7573939&vk_are_notifications_enabled=0&vk_experiment=eyIxMTk5IjowfQ&vk_is_app_user=1&vk_is_employee=1&vk_is_favorite=0&vk_language=ru&vk_platform=desktop_web&vk_ref=other&vk_ts=1613033151&vk_user_id=19039187&sign=gpBYPyR0JoU"
+  const data = VkStartParamsBuilderClass.fromQueryParams(QS.parse(test))
+  expect(data.experiment).toMatchObject({"1199":0})
+  expect(data.userId).toBe(19039187)
+})
+
+
+test("parse start arguments NO experiment", () => {
+  const test = "?vk_access_token_settings=&vk_app_id=7573939&vk_are_notifications_enabled=0&vk_is_app_user=1&vk_is_employee=1&vk_is_favorite=0&vk_language=ru&vk_platform=desktop_web&vk_ref=other&vk_ts=1613033151&vk_user_id=19039187&sign=gpBYPyR0JoU"
+  const data = VkStartParamsBuilderClass.fromQueryParams(QS.parse(test))
+  expect(data.experiment).toMatchObject({})
+  expect(data.userId).toBe(19039187)
 })

@@ -160,6 +160,7 @@ const errors = [
       code: -1001
     }
   },
+  // {"error_type":"auth_error","error_data":{"error":"invalid_request","error_description":"application was deleted","error_reason":""}}
 ];
 errors.forEach(({ platform, name, raw, match }) => {
   test(`[${platform}] ${name}`, () => {

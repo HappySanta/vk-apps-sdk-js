@@ -6,9 +6,11 @@ import VkConnectRequest from './VkConnectRequest';
 import { Queue } from './Queue';
 import ExponentialBackoff from './ExponentialBackoff';
 
+export const QS = queryString;
 export const QueueClass = Queue;
 export const VkConnectRequestClass = VkConnectRequest;
 export const ExponentialBackoffClass = ExponentialBackoff;
+export const VkStartParamsBuilderClass = VkStartParamsBuilder;
 
 /**
  * @param {object} object

@@ -249,4 +249,13 @@ export default class VkStartParams {
 	_sign
 	_ref
 	_isFavorite
+	_experiment
+
+	set experiment(value) {
+		this._experiment = value
+	}
+
+	get experiment() {
+		return this._experiment || {}
+	}
 }

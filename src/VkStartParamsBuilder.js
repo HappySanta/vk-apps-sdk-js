@@ -9,6 +9,7 @@ export default class VkStartParamsBuilder {
 		let TYPE_STRING = 'string'
 		let TYPE_BOOLEAN = 'boolean'
 		let TYPE_OBJECT_FROM_JSON = 'json_to_object'
+		let TYPE_BASE64_TO_JSON = 'type_base64_to_json'
 
 		function snakeToCamel(s) {
 			return s.replace(/(_\w)/g, function (m) {
@@ -30,6 +31,12 @@ export default class VkStartParamsBuilder {
 				value = !!+value
 			} else if (type === TYPE_OBJECT_FROM_JSON) {
 				value = value ? JSON.parse(value) : null
+			} else if (type === TYPE_BASE64_TO_JSON) {
+				try {
+					value = value ? JSON.parse(atob(value)) : {}
+				} catch (e) {
+					value = {}
+				}
 			}
 
 			target[snakeToCamel(key.replace('vk_', ''))] = value
@@ -49,6 +56,7 @@ export default class VkStartParamsBuilder {
 		ss(v, params, 'vk_ref', TYPE_STRING, '')
 		ss(v, params, 'vk_is_favorite', TYPE_BOOLEAN, '')
 		ss(v, params, 'sign', TYPE_STRING, '')
+		ss(v, params, 'vk_experiment', TYPE_BASE64_TO_JSON, '')
 
 		return v
 
